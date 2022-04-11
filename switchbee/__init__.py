@@ -1,22 +1,22 @@
-import json
-from math import fabs
-from tkinter import COMMAND, SW
 import requests
 from datetime import datetime
 from const import *
-
+import urllib3
 
 class SwitchBee():
-    def __init__(self, central_unit, user, password):
+    def __init__(self, central_unit, user, password, cert=False):
         self.__cunit_ip = central_unit
         self.__user = user
         self.__password = password
         self.__base_url = f'https://{self.__cunit_ip}/{COMMANDS_URL}'
-        self.__cert = False
+        self.__cert = cert
         self.__token = None
-        self.__cached_items = {}
 
-    def __post(self, command, params={}, timeout = 3):
+        if not self.__cert:
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
+    def __post(self, command, params={}, timeout=REQUEST_TIMEOUT):
 
         self.__login()
 
@@ -58,19 +58,16 @@ class SwitchBee():
             raise RuntimeError('Login Failed')
     
 
-    def get_devices(self):
+    def get_devices(self, types=SUPPORTED_ITEMS):
 
         res = self.__post(COMMAND_GET_CONF)
-
+        data = {}
         for zone in res['zones']:
             for item in zone['items']:
-                if item['type'] in SUPPORTED_ITEMS:
-                    self.__cached_items[item['id']] = item
+                if item['type'] in types:
+                    data[item['id']] = item
 
-        return self.__cached_items
-
+        return data
 
     def get_states(self, ids):
-        print(ids)
-        res = self.__post(COMMAND_GET_MULTI_STATES, ids)
-        print(res)
+        return self.__post(COMMAND_GET_MULTI_STATES, ids)

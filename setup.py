@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name = 'PySwitchbee',
     packages = ['switchbee'],
-    install_requires=['request'],
+    install_requires=['requests', 'urllib3'],
     version = '0.1.0',
     description = 'A library to communicate with SwitchBee',
     author='Jafar Atili',
