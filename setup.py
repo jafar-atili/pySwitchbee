@@ -1,10 +1,13 @@
 from setuptools import setup
 
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
+
 setup(
     name = 'PySwitchbee',
     packages = ['switchbee'],
     install_requires=['requests', 'urllib3'],
-    version = '0.1.0',
+    version = '0.0.3',
     description = 'A library to communicate with SwitchBee',
     author='Jafar Atili',
     url='https://github.com/jafar-atili/pySwitchbee/',
@@ -17,5 +20,6 @@ setup(
         'Programming Language :: Python',
         'Topic :: Home Automation',
         'Topic :: Software Development :: Libraries :: Python Modules'
-        ]
+        ],
+    python_requires=">=3.6",
 )

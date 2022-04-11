@@ -1,7 +1,38 @@
 import requests
 from datetime import datetime
-from const import *
+from switchbee.const import *
 import urllib3
+
+REQUEST_TIMEOUT = 3
+
+# SwitchBee Request commands
+COMMAND_LOGIN = 'LOGIN'
+COMMAND_GET_CONF = 'GET_CONFIGURATION'
+COMMAND_GET_MULTI_STATES = 'GET_MULTIPLE_STATES'
+COMMAND_OPERATE = 'OPERATE'
+
+# SwitchBee request attributes
+TOKEN_ATTR = 'token'
+COMMAND_ATTR = 'command'
+PARAMS_ATTR = 'params'
+USER_ATTR = 'username'
+PASS_ATTR = 'password'
+
+COMMANDS_URL = 'commands'
+
+# SwitchBee device types
+TYPE_DIMMER = 'DIMMER'
+TYPE_REPEATER = 'REPEATER'
+TYPE_SWITCH = 'SWITCH'
+TYPE_SHUTTER = 'SHUTTER'
+TYPE_TWO_WAY = 'TWO_WAY'
+TYPE_GROUP_SWITCH = 'GROUP_SWITCH'
+TYPE_SCENARIO = 'SCENARIO'
+TYPE_TIMED_POWER = 'TIMED_POWER'
+
+# List of default skipped types
+SUPPORTED_ITEMS = [TYPE_DIMMER, TYPE_SWITCH, TYPE_SHUTTER]
+
 
 class SwitchBee():
     def __init__(self, central_unit, user, password, cert=False):
@@ -15,15 +46,14 @@ class SwitchBee():
         if not self.__cert:
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-
     def __post(self, command, params={}, timeout=REQUEST_TIMEOUT):
 
-        self.__login()
+        self.login()
 
         payload = {
-            TOKEN_KEY: self.__token['token'],
-            COMMAND_KEY: command,
-            PARAMS_KEY: params
+            TOKEN_ATTR: self.__token['token'],
+            COMMAND_ATTR: command,
+            PARAMS_ATTR: params
         }
 
         response = requests.post(self.__base_url, json=payload, timeout=timeout, verify=self.__cert)
@@ -36,28 +66,27 @@ class SwitchBee():
         else:
             raise RuntimeError(f'Request with payload {payload} failed!')
 
-    def __login(self):
+    def login(self):
 
         if self.__token and self.__token['expiration'] < int(datetime.now().timestamp()):
-            print("already logged in")
             # already logged in
             return
 
         payload = {
-            COMMAND_KEY: 'LOGIN',
-			PARAMS_KEY: {
-				USER_KEY: self.__user,
-				PASS_KEY: self.__password
+            COMMAND_ATTR: 'LOGIN',
+			PARAMS_ATTR: {
+				USER_ATTR: self.__user,
+				PASS_ATTR: self.__password
 			}
         }
 
         response = requests.post(self.__base_url, json=payload, timeout=3, verify=self.__cert)
         if response.status_code == 200:            
             self.__token = response.json()['data']
+            print(response.json())
         else:
             raise RuntimeError('Login Failed')
     
-
     def get_devices(self, types=SUPPORTED_ITEMS):
 
         res = self.__post(COMMAND_GET_CONF)
@@ -71,3 +100,6 @@ class SwitchBee():
 
     def get_states(self, ids):
         return self.__post(COMMAND_GET_MULTI_STATES, ids)
+
+    def set_device_state(self, id, state):
+        self.__post(COMMAND_OPERATE, {'directive': 'SET' ,'itemId': id, 'value': state})
