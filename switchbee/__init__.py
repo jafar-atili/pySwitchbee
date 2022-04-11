@@ -1,6 +1,5 @@
 import requests
 from datetime import datetime
-from switchbee.const import *
 import urllib3
 
 REQUEST_TIMEOUT = 3
