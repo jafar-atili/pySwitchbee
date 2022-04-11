@@ -1,3 +1,3 @@
 # pySwitchbee
 
-Library to control Switchbot IoT devices
+Library to control SwitchBee IoT devices
