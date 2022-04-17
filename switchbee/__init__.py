@@ -1,6 +1,7 @@
 import aiohttp
 import asyncio
 from datetime import datetime
+from json import JSONDecodeError
 
 # SwitchBee Request commands
 CMD_LOGIN = 'LOGIN'
@@ -11,8 +12,11 @@ CMD_STATS = 'STATS'
 CMD_OPERATE = 'OPERATE'
 CMD_STATE = 'STATE'
 
+STATUS_FAILED = 'FAILED'
+
 STATUS_OK = 'OK'
 STATUS_INVALID_TOKEN = 'INVALID_TOKEN'
+STATUS_LOGIN_FAILED = 'LOGIN_FAILED'
 
 # SwitchBee request attributes
 ATTR_COMMAND = 'command'
@@ -20,6 +24,7 @@ ATTR_PARAMS = 'params'
 ATTR_USER = 'username'
 ATTR_PASS = 'password'
 ATTR_DATA = 'data'
+ATTR_MAC = 'mac'
 ATTR_STATUS = 'status'
 ATTR_EXPIRATION = 'expiration'
 ATTR_TOKEN = 'token'
@@ -27,6 +32,7 @@ ATTR_ZONES = 'zones'
 ATTR_ITEMS = 'items'
 ATTR_TYPE = 'type'
 ATTR_ID = 'id'
+ATTR_STATE = 'state'
 
 STATE_ON = 'ON'
 STATE_OFF = 'OFF'
@@ -42,44 +48,46 @@ TYPE_TWO_WAY = 'TWO_WAY'
 TYPE_GROUP_SWITCH = 'GROUP_SWITCH'
 TYPE_SCENARIO = 'SCENARIO'
 TYPE_TIMED_POWER = 'TIMED_POWER'
+TYPE_OUTLET = 'OUTLET'
 
 # List of default skipped types
 SUPPORTED_ITEMS = [TYPE_DIMMER, TYPE_SWITCH, TYPE_SHUTTER]
 
-REQUEST_TIMEOUT = 3
+REQUEST_TIMEOUT = 5
 
 def current_timestamp():
     return int(datetime.now().timestamp())
 
 
 class SwitchBee():
-    def __init__(self, central_unit, user, password, request_timeout = REQUEST_TIMEOUT):
+    def __init__(self, central_unit, user, password):
         self.__cunit_ip = central_unit
         self.__user = user
         self.__password = password
         self.__base_url = f'https://{self.__cunit_ip}/{COMMANDS_URL}'
-        self.__cert = cert
         self.__token = None
         self.__token_expiration = current_timestamp()
-        self.__tmout = request_timeout
+        self.__tmout = REQUEST_TIMEOUT
         self.__session = aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False), 
                     timeout=aiohttp.ClientTimeout(total=self.__tmout))
 
     async def close(self):
         await self.__session.close()
 
-    async def __send_request(self, command, params={}):
-
+    async def __send_request(self, command, params={}):            
         async def do_send_request(payload):
             try:
                 resp = await self.__session.post(url=self.__base_url, json=payload)
             except asyncio.TimeoutError as e:
-                return {"state": 'Failed', "code": -200, 'message': e}
+                return {ATTR_STATUS: STATUS_FAILED, "code": -200, 'message': e}
             except aiohttp.ClientError as e:
-                return {"state": 'Failed', "code": -200, 'message': e}
+                return {ATTR_STATUS: STATUS_FAILED, "code": -200, 'message': e}
             
-            return await resp.json(content_type=None)
-    
+            try:
+                return await resp.json(content_type=None)
+            except JSONDecodeError as e:
+                return {ATTR_STATUS: STATUS_FAILED, "code": -200, 'message': 'Unexpected Response'}
+
         if command == CMD_LOGIN:
             payload = {
                 ATTR_COMMAND: CMD_LOGIN,
@@ -99,30 +107,25 @@ class SwitchBee():
         resp = await do_send_request(payload)
         # Someone else must've logged in and refreshed the token, for now just try to log in again
         if resp[ATTR_STATUS] != STATUS_OK and resp[ATTR_STATUS] == STATUS_INVALID_TOKEN:
-            self.login(True)
+            self.login()
             resp = await do_send_request(payload)
         
         return resp
 
-    async def login(self, force=False):
-        # Check if need to re-login
-        if not force and self.__token and self.__token_expiration > current_timestamp():
-            # Already logged in
-            return
-
+    async def login(self):
         resp = await self.__send_request(CMD_LOGIN)
         if resp[ATTR_STATUS] == STATUS_OK:
             self.__token = resp[ATTR_DATA][ATTR_TOKEN]
             self.__token_expiration = resp[ATTR_DATA][ATTR_EXPIRATION]
-            return True
-        return False
+        
+        return resp
 
     async def get_configuration(self):
         return await self.__send_request(CMD_GET_CONF)
 
     async def get_multiple_states(self, ids: list):
         '''returns JSON {'status': 'OK', 'data': [{'id': 212, 'state': 'OFF'}, {'id': 343, 'state': 'OFF'}]}'''
-        return self.__send_request(CMD_GET_MULTI_STATES, ids)
+        return await self.__send_request(CMD_GET_MULTI_STATES, ids)
 
     async def get_state(self, id: int):
         ''' returns JSON {'status': 'OK', 'data': 'OFF'}'''
@@ -135,31 +138,3 @@ class SwitchBee():
     async def get_stats(self):
         ''' returns {'status': 'OK', 'data': {}} on my unit'''
         return await self.__send_request(CMD_STATS)
-
-    # wrapper method
-    async def get_devices_list_by_filter(self, type_filter: list = SUPPORTED_ITEMS):
-        res = await self.__send_request(CMD_GET_CONF)
-        data = []
-        for zone in res[ATTR_DATA][ATTR_ZONES]:
-            for item in zone[ATTR_ITEMS]:
-                if not type_filter:
-                    data.append(item[ATTR_ID])
-                elif type_filter and item[ATTR_TYPE] in type_filter:
-                    data.append(item[ATTR_ID])
-
-        return data      
-    
-    # wrapper method
-    async def get_devices_map_by_filter(self, type_filter: list = SUPPORTED_ITEMS):
-        res = await self.__send_request(CMD_GET_CONF)
-        data = {}
-        for zone in res[ATTR_DATA][ATTR_ZONES]:
-            for item in zone[ATTR_ITEMS]:
-                if not type_filter:
-                    data[item[ATTR_ID]] = item
-                elif type_filter :
-                    data[item[ATTR_ID]] = item
-
-        return data
-
- 
