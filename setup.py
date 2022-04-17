@@ -6,8 +6,8 @@ with open("README.md", "r", encoding="utf-8") as fh:
 setup(
     name = 'PySwitchbee',
     packages = ['switchbee'],
-    install_requires=['requests', 'urllib3'],
-    version = '0.0.6',
+    install_requires=['asyncio', 'aiohttp'],
+    version = '0.0.7',
     description = 'A library to communicate with SwitchBee',
     author='Jafar Atili',
     url='https://github.com/jafar-atili/pySwitchbee/',

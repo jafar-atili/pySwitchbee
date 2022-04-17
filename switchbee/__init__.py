@@ -1,8 +1,6 @@
-import requests
+import aiohttp
+import asyncio
 from datetime import datetime
-import urllib3
-
-REQUEST_TIMEOUT = 5
 
 # SwitchBee Request commands
 CMD_LOGIN = 'LOGIN'
@@ -30,6 +28,9 @@ ATTR_ITEMS = 'items'
 ATTR_TYPE = 'type'
 ATTR_ID = 'id'
 
+STATE_ON = 'ON'
+STATE_OFF = 'OFF'
+
 COMMANDS_URL = 'commands'
 
 # SwitchBee device types
@@ -45,13 +46,14 @@ TYPE_TIMED_POWER = 'TIMED_POWER'
 # List of default skipped types
 SUPPORTED_ITEMS = [TYPE_DIMMER, TYPE_SWITCH, TYPE_SHUTTER]
 
+REQUEST_TIMEOUT = 3
 
 def current_timestamp():
     return int(datetime.now().timestamp())
 
 
 class SwitchBee():
-    def __init__(self, central_unit, user, password, cert=False, request_timeout = REQUEST_TIMEOUT):
+    def __init__(self, central_unit, user, password, request_timeout = REQUEST_TIMEOUT):
         self.__cunit_ip = central_unit
         self.__user = user
         self.__password = password
@@ -60,97 +62,104 @@ class SwitchBee():
         self.__token = None
         self.__token_expiration = current_timestamp()
         self.__tmout = request_timeout
+        self.__session = aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False), 
+                    timeout=aiohttp.ClientTimeout(total=self.__tmout))
+
+    async def close(self):
+        await self.__session.close()
+
+    async def __send_request(self, command, params={}):
+
+        async def do_send_request(payload):
+            try:
+                resp = await self.__session.post(url=self.__base_url, json=payload)
+            except asyncio.TimeoutError as e:
+                return {"state": 'Failed', "code": -200, 'message': e}
+            except aiohttp.ClientError as e:
+                return {"state": 'Failed', "code": -200, 'message': e}
+            
+            return await resp.json(content_type=None)
     
-        if not self.__cert:
-            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-        # login as part of initializing the object
-        self.__login()
-
-    def __post(self, command: str, params: dict = {}):
-        
-        # Check if need to re-login
-        if self.__token and self.__token_expiration < current_timestamp():
-            # Already logged in
-            self.__login()
-
-        def __do_post(url, token, command, params, timeout, cert):
-
+        if command == CMD_LOGIN:
             payload = {
-                ATTR_TOKEN: token,
+                ATTR_COMMAND: CMD_LOGIN,
+                ATTR_PARAMS: {
+                    ATTR_USER: self.__user,
+                    ATTR_PASS: self.__password
+                }
+            }
+
+        else:
+            payload = {
+                ATTR_TOKEN: self.__token,
                 ATTR_COMMAND: command,
                 ATTR_PARAMS: params
             }
 
-            return requests.post(url, json=payload, timeout=timeout, verify=cert)
+        resp = await do_send_request(payload)
+        # Someone else must've logged in and refreshed the token, for now just try to log in again
+        if resp[ATTR_STATUS] != STATUS_OK and resp[ATTR_STATUS] == STATUS_INVALID_TOKEN:
+            self.login(True)
+            resp = await do_send_request(payload)
         
-        response = __do_post(self.__base_url, self.__token, command, params, self.__tmout, self.__cert)
-        if response.status_code == 200:
-            respj = response.json()
-            if respj[ATTR_STATUS] != STATUS_OK:
-                if respj[ATTR_STATUS] == STATUS_INVALID_TOKEN:
-                    # Token was revoked, probably another attempt of login happened within the same user
-                    # we'll just try to login and send the request again
-                    self.__login()
-                    return __do_post(self.__base_url, self.__token, command, params, self.__tmout, self.__cert)         
+        return resp
 
-            return response.json()
-        else:
-            return None
+    async def login(self, force=False):
+        # Check if need to re-login
+        if not force and self.__token and self.__token_expiration > current_timestamp():
+            # Already logged in
+            return
 
-    def __login(self):
-
-        payload = {
-            ATTR_COMMAND: CMD_LOGIN,
-			ATTR_PARAMS: {
-				ATTR_USER: self.__user,
-				ATTR_PASS: self.__password
-			}
-        }
-    
-        response = requests.post(self.__base_url, json=payload, timeout=self.__tmout, verify=self.__cert)
-        if response.status_code == 200:
-            self.__token = response.json()[ATTR_DATA][ATTR_TOKEN]
-            self.__token_expiration = response.json()[ATTR_DATA][ATTR_EXPIRATION]
+        resp = await self.__send_request(CMD_LOGIN)
+        if resp[ATTR_STATUS] == STATUS_OK:
+            self.__token = resp[ATTR_DATA][ATTR_TOKEN]
+            self.__token_expiration = resp[ATTR_DATA][ATTR_EXPIRATION]
             return True
-        else:
-            return False
+        return False
+
+    async def get_configuration(self):
+        return await self.__send_request(CMD_GET_CONF)
+
+    async def get_multiple_states(self, ids: list):
+        '''returns JSON {'status': 'OK', 'data': [{'id': 212, 'state': 'OFF'}, {'id': 343, 'state': 'OFF'}]}'''
+        return self.__send_request(CMD_GET_MULTI_STATES, ids)
+
+    async def get_state(self, id: int):
+        ''' returns JSON {'status': 'OK', 'data': 'OFF'}'''
+        return await self.__send_request(CMD_GET_STATE, id)
+
+    async def set_state(self, id: int, state):
+        ''' returns JSON {'status': 'OK', 'data': 'OFF/ON'}'''
+        return await self.__send_request(CMD_OPERATE, {'directive': 'SET' ,'itemId': id, 'value': state})
+
+    async def get_stats(self):
+        ''' returns {'status': 'OK', 'data': {}} on my unit'''
+        return await self.__send_request(CMD_STATS)
+
+    # wrapper method
+    async def get_devices_list_by_filter(self, type_filter: list = SUPPORTED_ITEMS):
+        res = await self.__send_request(CMD_GET_CONF)
+        data = []
+        for zone in res[ATTR_DATA][ATTR_ZONES]:
+            for item in zone[ATTR_ITEMS]:
+                if not type_filter:
+                    data.append(item[ATTR_ID])
+                elif type_filter and item[ATTR_TYPE] in type_filter:
+                    data.append(item[ATTR_ID])
+
+        return data      
     
-    def get_devices_map_by_type(self, types: list = SUPPORTED_ITEMS):
-        res = self.__post(CMD_GET_CONF)
+    # wrapper method
+    async def get_devices_map_by_filter(self, type_filter: list = SUPPORTED_ITEMS):
+        res = await self.__send_request(CMD_GET_CONF)
         data = {}
         for zone in res[ATTR_DATA][ATTR_ZONES]:
             for item in zone[ATTR_ITEMS]:
-                if item[ATTR_TYPE] in types:
+                if not type_filter:
+                    data[item[ATTR_ID]] = item
+                elif type_filter :
                     data[item[ATTR_ID]] = item
 
         return data
 
-    def get_devices_list_by_type(self, types: list = SUPPORTED_ITEMS):
-        res = self.__post(CMD_GET_CONF)
-        data = []
-        for zone in res[ATTR_DATA][ATTR_ZONES]:
-            for item in zone[ATTR_ITEMS]:
-                if item[ATTR_TYPE] in types:
-                    data.append(item[ATTR_ID])
-
-        return data        
-
-    def get_devices_list(self):
-        return self.__post(CMD_GET_CONF)
-
-    def get_multiple_states(self, ids: list):
-        '''returns JSON {'status': 'OK', 'data': [{'id': 212, 'state': 'OFF'}, {'id': 343, 'state': 'OFF'}]}'''
-        return self.__post(CMD_GET_MULTI_STATES, ids)
-
-    def get_state(self, id: int):
-        ''' returns JSON {'status': 'OK', 'data': 'OFF'}'''
-        return self.__post(CMD_GET_STATE, id)
-
-    def set_state(self, id: int, state):
-        ''' returns JSON {'status': 'OK', 'data': 'OFF/ON'}'''
-        return self.__post(CMD_OPERATE, {'directive': 'SET' ,'itemId': id, 'value': state})
-
-    def get_stats(self):
-        ''' returns {'status': 'OK', 'data': {}} on my unit'''
-        return self.__post(CMD_STATS)
+ 
