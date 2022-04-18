@@ -7,7 +7,7 @@ setup(
     name = 'PySwitchbee',
     packages = ['switchbee'],
     install_requires=['asyncio', 'aiohttp'],
-    version = '0.0.8',
+    version = '0.0.9',
     description = 'A library to communicate with SwitchBee',
     author='Jafar Atili',
     url='https://github.com/jafar-atili/pySwitchbee/',
