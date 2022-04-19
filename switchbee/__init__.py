@@ -16,6 +16,7 @@ STATUS_FAILED = 'FAILED'
 
 STATUS_OK = 'OK'
 STATUS_INVALID_TOKEN = 'INVALID_TOKEN'
+STATUS_TOKEN_EXPIRED = 'TOKEN_EXPIRED'
 STATUS_LOGIN_FAILED = 'LOGIN_FAILED'
 
 # SwitchBee request attributes
@@ -79,7 +80,11 @@ class SwitchBee():
     def relogin_on_invalid_token(self, value: bool):
         self.__relogin_on_invalid_token = value
 
-    async def __send_request(self, command, params={}):            
+    async def __send_request(self, command, params={}):
+
+        if command != CMD_LOGIN and self.__token and int(datetime.now().timestamp() * 1000) >= self.__token_expiration:
+            await self.login()
+
         async def do_send_request(payload):
             try:
                 resp = await self.__session.post(url=self.__base_url, json=payload)
@@ -111,8 +116,9 @@ class SwitchBee():
 
         resp = await do_send_request(payload)
         # Someone else logged in with the same user and refreshed the token, for now just try to login again
-        if self.__relogin_on_invalid_token and resp[ATTR_STATUS] != STATUS_OK and resp[ATTR_STATUS] == STATUS_INVALID_TOKEN:
-            self.login()
+        if self.__relogin_on_invalid_token and resp[ATTR_STATUS] != STATUS_OK and   \
+            (resp[ATTR_STATUS] == STATUS_INVALID_TOKEN or resp[ATTR_STATUS] == STATUS_TOKEN_EXPIRED):
+            await self.login()
             resp = await do_send_request(payload)
         
         return resp
