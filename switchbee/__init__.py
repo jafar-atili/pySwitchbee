@@ -36,7 +36,7 @@ ATTR_ITEMS = "items"
 ATTR_TYPE = "type"
 ATTR_ID = "id"
 ATTR_STATE = "state"
-ATTR_NAME = "name"
+ATTR_HARDWARE = "hw"
 
 STATE_ON = "ON"
 STATE_OFF = "OFF"
@@ -102,23 +102,6 @@ class SwitchBeeAPI:
         ):
             await self.login()
 
-        async def do_send_request(payload):
-            try:
-                resp = await self._session.post(
-                    url=f"https://{self._cunit_ip}/commands", json=payload
-                )
-                result = await resp.json(content_type=None)
-            except (asyncio.TimeoutError, aiohttp.ClientError) as e:
-                raise SwitchBeeError(e)
-            except JSONDecodeError as e:
-                resp = await resp.read()
-                raise SwitchBeeError(f"Unexpected response: {resp}")
-            else:
-                if ATTR_STATUS not in result or result[ATTR_STATUS] != STATUS_OK:
-                    raise SwitchBeeError(f"Central Unit replied with failure: {result}")
-
-                return result
-
         if command == CMD_LOGIN:
             payload = {
                 ATTR_COMMAND: CMD_LOGIN,
@@ -132,22 +115,44 @@ class SwitchBeeAPI:
                 ATTR_PARAMS: params,
             }
 
-        resp = await do_send_request(payload)
-        # Someone else logged in with the same user and refreshed the token,
-        # for now just try to login again
-        if (
-            self._relogin_on_invalid_token
-            and resp[ATTR_STATUS] != STATUS_OK
-            and (
-                resp[ATTR_STATUS] == STATUS_INVALID_TOKEN
-                or resp[ATTR_STATUS] == STATUS_TOKEN_EXPIRED
+        try:
+            resp = await self._session.post(
+                url=f"https://{self._cunit_ip}/commands", json=payload
             )
-        ):
-            logger.debug("About to re-login due to %s", resp[ATTR_STATUS])
-            await self.login()
-            resp = await do_send_request(payload)
+            json_result = await resp.json(content_type=None)
+        except (asyncio.TimeoutError, aiohttp.ClientError) as e:
+            raise SwitchBeeError(e)
+        except JSONDecodeError as e:
+            resp = await resp.read()
+            raise SwitchBeeError(f"Unexpected response: {resp}")
+        else:
 
-        return resp
+            # Someone else logged in with the same user and changed the token,
+            # for now just try to login again
+            if (
+                self._relogin_on_invalid_token
+                and json_result[ATTR_STATUS] != STATUS_OK
+                and (
+                    json_result[ATTR_STATUS] == STATUS_INVALID_TOKEN
+                    or json_result[ATTR_STATUS] == STATUS_TOKEN_EXPIRED
+                )
+            ):
+                logger.debug("About to re-login due to %s", json_result[ATTR_STATUS])
+                await self.login()
+                raise SwitchBeeError(
+                    f"data Request failed due to {json_result[ATTR_STATUS]}, trying to re-login"
+                )
+
+            else:
+                if (
+                    ATTR_STATUS not in json_result
+                    or json_result[ATTR_STATUS] != STATUS_OK
+                ):
+                    raise SwitchBeeError(
+                        f"Central Unit replied with failure: {json_result}"
+                    )
+
+        return json_result
 
     async def login(self):
         try:
