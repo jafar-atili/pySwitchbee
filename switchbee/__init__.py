@@ -37,6 +37,7 @@ ATTR_TYPE = "type"
 ATTR_ID = "id"
 ATTR_STATE = "state"
 ATTR_HARDWARE = "hw"
+ATTR_NAME = "name"
 
 STATE_ON = "ON"
 STATE_OFF = "OFF"
@@ -151,7 +152,6 @@ class SwitchBeeAPI:
                     raise SwitchBeeError(
                         f"Central Unit replied with failure: {json_result}"
                     )
-
         return json_result
 
     async def login(self):
