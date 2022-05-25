@@ -1,10 +1,12 @@
 # pySwitchbee
+Python Library to control SwitchBee IoT devices
 
-Library to control SwitchBee IoT devices
+![Build Status](https://img.shields.io/pypi/dm/pyswitchbee)
 
 
-Usage:
 
+Example Usage:
+```
 import switchbee
 
 async def main():
@@ -22,4 +24,4 @@ async def main():
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(main())
-
+```
