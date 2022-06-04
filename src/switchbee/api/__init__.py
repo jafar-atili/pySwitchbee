@@ -117,6 +117,10 @@ class CentralUnitAPI:
                                 ApiStatus.INVALID_TOKEN,
                                 ApiStatus.TOKEN_EXPIRED,
                             ]:
+                                # mark the token as invalid to re-attempt login
+                                # in the next request
+                                self._token = None
+                                self._token_expiration = 0
                                 raise SwitchBeeTokenError(
                                     json_result[ApiAttribute.STATUS]
                                 )
@@ -143,7 +147,7 @@ class CentralUnitAPI:
         ):
             logger.info(
                 "Logging into the Central Unit %s",
-                "for the first time." if not self._token else " due to Token expiry.",
+                "for the first time.",
             )
             await self._login()
 
