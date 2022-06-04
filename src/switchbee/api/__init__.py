@@ -204,6 +204,12 @@ class CentralUnitAPI:
 
     async def fetch_configuration(
         self,
+        include: list[DeviceType] = [
+            DeviceType.Switch,
+            DeviceType.Dimmer,
+            DeviceType.TimePower,
+            DeviceType.Shutter,
+        ],
     ):
         data = await self.get_configuration()
         if data[ApiAttribute.STATUS] != ApiStatus.OK:
@@ -217,6 +223,10 @@ class CentralUnitAPI:
             for item in zone[ApiAttribute.ITEMS]:
                 device_type = item[ApiAttribute.TYPE]
                 device_hw = item[ApiAttribute.HARDWARE]
+
+                if DeviceType(device_type) not in include:
+                    print(f"Skipping {device_type}")
+                    continue
                 # add switch type device
                 if device_type == DeviceType.Switch.value:
 

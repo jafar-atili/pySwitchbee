@@ -65,6 +65,40 @@ if __name__ == "__main__":
 
     get_event_loop().run_until_complete(main())
     exit()
+```
 
+Alternatively, it is possible to control SwitchBee using the cli tool `switchbee_cli.py` as following:
+
+To list devices that currently on:
+
+`python switchbee_cli.py -i 192.168.50.2 -u USERNAME -p PASSWORD get_states --only-on`
 
 ```
+   '_state': 'ON',
+    'hardware': <HardwareType.Switch: 'DIMMABLE_SWITCH'>,
+    'id': 311,
+    'name': 'Ceiling',
+    'type': <DeviceType.Switch: 'SWITCH'>,
+    'zone': 'Outdoo Storage'}
+
+{   '_state': 'ON',
+    'hardware': <HardwareType.Switch: 'DIMMABLE_SWITCH'>,
+    'id': 142,
+    'name': 'Spotlights',
+    'type': <DeviceType.Switch: 'SWITCH'>,
+    'zone': 'Porch'}
+```
+
+To set shutter with device id 392 position 50%:
+
+`python switchbee_cli.py -i 192.168.50.2 -u USERNAME -p PASSWORD set_state --device-id 392 --state 50`
+
+
+To turn on Power Timed Switch with device id 450 for 30 minutes:
+
+`python switchbee_cli.py -i 192.168.50.2 -u USERNAME -p PASSWORD set_state --device-id 450 --state 30`
+
+
+To turn off light with device id 122:
+
+`python switchbee_cli.py -i 192.168.50.2 -u USERNAME -p PASSWORD set_state --device-id 122 --state OFF`
