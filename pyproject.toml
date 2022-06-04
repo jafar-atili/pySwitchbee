@@ -1,0 +1,27 @@
+
+[build-system]
+requires      = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyswitchbee"
+version = "1.1.7"
+description = "SwitchBee Python Integration."
+readme = "README.md"
+authors = [{ name = "Jafar Atili", email = "at.jafar@outlook.com" }]
+keywords = [ "home", "automation", "switchbee", "smart" ]
+classifiers = [
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Topic :: Home Automation",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Typing :: Typed"
+]
+dependencies = ["asyncio", "aiohttp"]
+requires-python = ">=3.9"
+
+
+  
+[project.urls]
+homepage = "https://pypi.org/project/pyswitchbee/"
+repository = "https://github.com/jafar-atili/pySwitchbee/"

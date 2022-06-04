@@ -1,27 +1,70 @@
 # pySwitchbee
-Python Library to control SwitchBee IoT devices
 
-![Build Status](https://img.shields.io/pypi/dm/pyswitchbee)
-
+Library to control SwitchBee IoT devices
 
 
-Example Usage:
-```
-import switchbee
+Usage:
+
+```python
+
+from asyncio import get_event_loop
+
+from aiohttp import ClientSession, ClientTimeout, TCPConnector
+from switchbee.api import CentralUnitAPI
+from switchbee.devices import DeviceType, SwitchState
+
 
 async def main():
-    session = aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False), 
-                    timeout=aiohttp.ClientTimeout(total=3)
-    
-    api = SwitchBee('192.168.50.10', 'name@domain.com', 'P4$$w0rd', session)
-    await api.login()
-    json_resp = await api.get_configuration()
-    if json_resp[switchbee.ATTR_STATUS] == switchbee.STATUS_OK:
-        print(json_resp)
-    else:
-        print('Failed')
-    await session.close()
+    session = ClientSession(
+        connector=TCPConnector(ssl=False),
+        timeout=ClientTimeout(total=3),
+    )
 
-loop = asyncio.get_event_loop()
-loop.run_until_complete(main())
+    cu = CentralUnitAPI("192.168.50.3", "user", "pass", session)
+    await cu.connect()
+
+    print(f"Central Unit: {cu.name}")
+    print(f"Central MAC: {cu.mac}")
+    print(f"Central Version: {cu.version}")
+
+    devices = await cu.devices
+
+    for device in devices:
+        # set the dimmer lights to 50% brightness
+        if device.type == DeviceType.Dimmer:
+            print(
+                "Discovered Dimmer device called {device.name} current brightness is {device.brigt}"
+            )
+            await cu.set_state(device.id, 50)
+
+        # set the shutters position to 30% opened
+        if device.type == DeviceType.Shutter:
+            print(
+                "Discovered Shutter device called {device.name} current position is {device.position}"
+            )
+            await cu.set_state(device.id, 30)
+
+        # turn off switches
+        if device.type == DeviceType.Switch:
+            print(
+                "Discovered Switch device called {device.name} current state is {device.state}"
+            )
+            await cu.set_state(device.id, SwitchState.OFF)
+
+        # set timer switch on for 10 minutes
+        if device.type == DeviceType.TimePower:
+            print(
+                "Discovered Timed Power device called {device.name} current state is {device.state} with {device.minutes_left} minutes left until shutdown"
+            )
+            await cu.set_state(device.id, 10)
+
+    session.close()
+
+
+if __name__ == "__main__":
+
+    get_event_loop().run_until_complete(main())
+    exit()
+
+
 ```
