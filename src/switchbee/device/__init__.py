@@ -103,13 +103,12 @@ class SwitchBeeBaseShutter(ABC):
     @position.setter
     def position(self, value: Union[str, int]) -> None:
 
-        if value:
-            if value == ApiStateCommand.OFF:
-                self._position = 0
-            elif value == ApiStateCommand.ON:
-                self._position = 100
-            else:
-                self._position = int(value)
+        if value == ApiStateCommand.OFF:
+            self._position = 0
+        elif value == ApiStateCommand.ON:
+            self._position = 100
+        else:
+            self._position = int(value)
 
 
 @dataclass
