@@ -39,19 +39,21 @@ class ApiAttribute:
     LAST_CONF_CHANGE = "lastConfChange"
 
 
-STATE_ON = "ON"
-STATE_OFF = "OFF"
+class ApiStateCommand:
+    ON = "ON"
+    OFF = "OFF"
 
 
 # SwitchBee device hardware
-HW_DIMMABLE_SWITCH = "DIMMABLE_SWITCH"
-HW_SHUTTER = "SHUTTER"
-HW_VIRTUAL = "VIRTUAL"
-HW_TIMED_POWER_SWITCH = "TIMED_POWER_SWITCH"
+class ApiDeviceHardware:
+    DIMMABLE_SWITCH = "DIMMABLE_SWITCH"
+    SHUTTER = "SHUTTER"
+    VIRTUAL = "VIRTUAL"
+    TIMED_POWER_SWITCH = "TIMED_POWER_SWITCH"
 
 
-class Types:
-    # SwitchBee devie types
+class ApiDeviceType:
+    # SwitchBee device types
     DIMMER = "DIMMER"
     REPEATER = "REPEATER"
     SWITCH = "SWITCH"

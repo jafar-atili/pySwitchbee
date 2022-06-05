@@ -16,7 +16,7 @@ from switchbee.device import (
     SwitchBeeTimerSwitch,
 )
 
-from switchbee.const import ApiAttribute, ApiCommand, ApiStatus
+from switchbee.const import ApiAttribute, ApiCommand, ApiStatus, ApiStateCommand
 from .utils import timestamp_now
 
 logger = getLogger(__name__)
@@ -117,10 +117,6 @@ class CentralUnitAPI:
                                 ApiStatus.INVALID_TOKEN,
                                 ApiStatus.TOKEN_EXPIRED,
                             ]:
-                                # mark the token as invalid to re-attempt login
-                                # in the next request
-                                self._token = None
-                                self._token_expiration = 0
                                 raise SwitchBeeTokenError(
                                     json_result[ApiAttribute.STATUS]
                                 )
@@ -147,7 +143,7 @@ class CentralUnitAPI:
         ):
             logger.info(
                 "Logging into the Central Unit %s",
-                "for the first time.",
+                "for the first time." if not self._token else " due to Token expiry.",
             )
             await self._login()
 
@@ -211,7 +207,7 @@ class CentralUnitAPI:
         include: list[DeviceType] = [
             DeviceType.Switch,
             DeviceType.Dimmer,
-            DeviceType.TimePower,
+            DeviceType.TimedPowerSwitch,
             DeviceType.Shutter,
         ],
     ):
@@ -227,10 +223,9 @@ class CentralUnitAPI:
             for item in zone[ApiAttribute.ITEMS]:
                 device_type = item[ApiAttribute.TYPE]
                 device_hw = item[ApiAttribute.HARDWARE]
-
                 if DeviceType(device_type) not in include:
-                    print(f"Skipping {device_type}")
                     continue
+
                 # add switch type device
                 if device_type == DeviceType.Switch.value:
 
@@ -238,7 +233,7 @@ class CentralUnitAPI:
                         id=item[ApiAttribute.ID],
                         name=item[ApiAttribute.NAME],
                         zone=zone[ApiAttribute.NAME],
-                        hardware=HardwareType(item[ApiAttribute.HARDWARE]),
+                        hardware=HardwareType(device_hw),
                         type=DeviceType.Switch,
                     )
                 # add dimmer (light) device
@@ -247,7 +242,7 @@ class CentralUnitAPI:
                         id=item[ApiAttribute.ID],
                         name=item[ApiAttribute.NAME],
                         zone=zone[ApiAttribute.NAME],
-                        hardware=HardwareType(item[ApiAttribute.HARDWARE]),
+                        hardware=HardwareType(device_hw),
                         type=DeviceType.Dimmer,
                     )
                 # add shutter device
@@ -256,17 +251,17 @@ class CentralUnitAPI:
                         id=item[ApiAttribute.ID],
                         name=item[ApiAttribute.NAME],
                         zone=zone[ApiAttribute.NAME],
-                        hardware=HardwareType(item[ApiAttribute.HARDWARE]),
+                        hardware=HardwareType(device_hw),
                         type=DeviceType.Shutter,
                     )
                 # add timed power switch device
-                elif device_type == DeviceType.TimePower.value:
+                elif device_type == DeviceType.TimedPowerSwitch.value:
                     self._devices_map[item[ApiAttribute.ID]] = SwitchBeeTimerSwitch(
                         id=item[ApiAttribute.ID],
                         name=item[ApiAttribute.NAME],
                         zone=zone[ApiAttribute.NAME],
-                        hardware=HardwareType(item[ApiAttribute.HARDWARE]),
-                        type=DeviceType.TimePower,
+                        hardware=HardwareType(device_hw),
+                        type=DeviceType.TimedPowerSwitch,
                     )
                 # add scenario
                 elif device_type == DeviceType.Scenario.value:
@@ -274,7 +269,7 @@ class CentralUnitAPI:
                         id=item[ApiAttribute.ID],
                         name=item[ApiAttribute.NAME],
                         zone=zone[ApiAttribute.NAME],
-                        hardware=HardwareType(item[ApiAttribute.HARDWARE]),
+                        hardware=HardwareType(device_hw),
                         type=DeviceType.Scenario,
                     )
                 # add group scenario only of type != VIRTUAL
@@ -286,7 +281,7 @@ class CentralUnitAPI:
                         id=item[ApiAttribute.ID],
                         name=item[ApiAttribute.NAME],
                         zone=zone[ApiAttribute.NAME],
-                        hardware=HardwareType(item[ApiAttribute.HARDWARE]),
+                        hardware=HardwareType(device_hw),
                         type=DeviceType.GroupSwitch,
                     )
 
@@ -308,7 +303,7 @@ class CentralUnitAPI:
                     DeviceType.GroupSwitch,
                     DeviceType.Dimmer,
                     DeviceType.Shutter,
-                    DeviceType.TimePower,
+                    DeviceType.TimedPowerSwitch,
                 ]
             ]
         )
@@ -323,7 +318,7 @@ class CentralUnitAPI:
                 self._devices_map[device_id].state = device_state[ApiAttribute.STATE]
             elif self._devices_map[device_id].type == DeviceType.Shutter:
                 self._devices_map[device_id].position = device_state[ApiAttribute.STATE]
-            elif self._devices_map[device_id].type == DeviceType.TimePower:
+            elif self._devices_map[device_id].type == DeviceType.TimedPowerSwitch:
                 self._devices_map[device_id].state = device_state[ApiAttribute.STATE]
             elif self._devices_map[device_id].type == DeviceType.GroupSwitch:
                 self._devices_map[device_id].state = device_state[ApiAttribute.STATE]

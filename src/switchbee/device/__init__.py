@@ -5,41 +5,62 @@ from typing import Union, final
 
 from ..api.utils import timestamp_now
 
-from ..const import (
-    HW_DIMMABLE_SWITCH,
-    HW_SHUTTER,
-    HW_TIMED_POWER_SWITCH,
-    HW_VIRTUAL,
-    STATE_OFF,
-    STATE_ON,
-    Types,
-)
-
-
-class SwitchState:
-    ON = STATE_ON
-    OFF = STATE_OFF
+from ..const import ApiDeviceHardware, ApiStateCommand, ApiDeviceType
 
 
 @unique
 class DeviceType(Enum):
-    """Enum class representing the device's state."""
+    """Enum class representing the device's type."""
 
-    Dimmer = Types.DIMMER
-    Switch = Types.SWITCH
-    Shutter = Types.SHUTTER
-    Scenario = Types.SCENARIO
-    Repeater = Types.REPEATER
-    GroupSwitch = Types.GROUP_SWITCH
-    TWO_WAY = Types.TWO_WAY
-    TimePower = Types.TIMED_POWER
+    Dimmer = ApiDeviceType.DIMMER, "Dimming Light"
+    Switch = ApiDeviceType.SWITCH, "Switch"
+    Shutter = ApiDeviceType.SHUTTER, "Shutter"
+    Scenario = ApiDeviceType.SCENARIO, "Scenario"
+    Repeater = ApiDeviceType.REPEATER, "Repeater"
+    GroupSwitch = ApiDeviceType.GROUP_SWITCH, "Group Switch"
+    TWO_WAY = ApiDeviceType.TWO_WAY, "Two Way"
+    TimedPowerSwitch = ApiDeviceType.TIMED_POWER, "Timed Power Switch"
+
+    def __new__(cls, *args, **kwds):
+        obj = object.__new__(cls)
+        obj._value_ = args[0]
+        return obj
+
+    # ignore the first param since it's already set by __new__
+    def __init__(self, _: str, display: str = None):
+        self._display = display
+
+    def __str__(self):
+        return self.display
+
+    # this makes sure that the description is read-only
+    @property
+    def display(self):
+        return self._display
 
 
 class HardwareType(Enum):
-    Virtual = HW_VIRTUAL
-    Switch = HW_DIMMABLE_SWITCH
-    Shutter = HW_SHUTTER
-    TimedSwitch = HW_TIMED_POWER_SWITCH
+    Virtual = ApiDeviceHardware.VIRTUAL, "Virtual"
+    Dimmable = ApiDeviceHardware.DIMMABLE_SWITCH, "Dimmable Switch"
+    Shutter = ApiDeviceHardware.SHUTTER, "Shutter"
+    TimedPowerSwitch = ApiDeviceHardware.TIMED_POWER_SWITCH, "Time Power Switch"
+
+    def __new__(cls, *args, **kwds):
+        obj = object.__new__(cls)
+        obj._value_ = args[0]
+        return obj
+
+    # ignore the first param since it's already set by __new__
+    def __init__(self, _: str, display: str = None):
+        self._display = display
+
+    def __str__(self):
+        return self.display
+
+    # this makes sure that the description is read-only
+    @property
+    def display(self):
+        return self._display
 
 
 @dataclass
@@ -60,10 +81,10 @@ class SwitchBeeBaseDevice(ABC):
 
 @dataclass
 class SwitchBeeBaseSwitch(ABC):
-    _state: SwitchState = field(init=False, default=None)
+    _state: ApiStateCommand = field(init=False, default=None)
 
     @property
-    def state(self) -> SwitchState:
+    def state(self) -> ApiStateCommand:
         return self._state
 
     @state.setter
@@ -83,9 +104,9 @@ class SwitchBeeBaseShutter(ABC):
     def position(self, value: Union[str, int]) -> None:
 
         if value:
-            if value == SwitchState.OFF:
+            if value == ApiStateCommand.OFF:
                 self._position = 0
-            elif value == SwitchState.ON:
+            elif value == ApiStateCommand.ON:
                 self._position = 100
             else:
                 self._position = int(value)
@@ -103,9 +124,9 @@ class SwitchBeeBaseDimmer(ABC):
     @brightness.setter
     def brightness(self, value: Union[str, int]) -> None:
 
-        if value == SwitchState.OFF or value == 0:
+        if value == ApiStateCommand.OFF or value == 0:
             self._brightness = 0
-        elif value == SwitchState.ON or value == 100:
+        elif value == ApiStateCommand.ON or value == 100:
             self._brightness = 100
         else:
             self._brightness = int(value)
@@ -114,10 +135,10 @@ class SwitchBeeBaseDimmer(ABC):
 @dataclass
 class SwitchBeeBaseTimer(ABC):
     _minutes_left: int = field(init=False)
-    _state: SwitchState = field(init=False)
+    _state: ApiStateCommand = field(init=False)
 
     @property
-    def state(self) -> SwitchState:
+    def state(self) -> ApiStateCommand:
         return self._state
 
     @property
@@ -128,18 +149,20 @@ class SwitchBeeBaseTimer(ABC):
     def state(self, value: Union[str, int]) -> None:
 
         if value:
-            if value == SwitchState.OFF:
+            if value == ApiStateCommand.OFF:
                 self._minutes_left = 0
                 self._state = value
             else:
                 self._minutes_left = int(value)
-                self._state = SwitchState.ON
+                self._state = ApiStateCommand.ON
 
 
 @dataclass
 class SwitchBeeSwitch(SwitchBeeBaseSwitch, SwitchBeeBaseDevice):
     def __post_init__(self) -> None:
-        """Post initialization validate device type category as POWER_PLUG."""
+        """Post initialization validate device type category as Switch."""
+        if self.type != DeviceType.Switch:
+            raise ValueError("only Switch are allowed")
         super().__post_init__()
 
 
@@ -147,7 +170,9 @@ class SwitchBeeSwitch(SwitchBeeBaseSwitch, SwitchBeeBaseDevice):
 @dataclass
 class SwitchBeeShutter(SwitchBeeBaseShutter, SwitchBeeBaseDevice):
     def __post_init__(self) -> None:
-        """Post initialization validate device type category as POWER_PLUG."""
+        """Post initialization validate device type category as Shutter."""
+        if self.type != DeviceType.Shutter:
+            raise ValueError("only Shutter are allowed")
         super().__post_init__()
 
 
@@ -155,7 +180,9 @@ class SwitchBeeShutter(SwitchBeeBaseShutter, SwitchBeeBaseDevice):
 @dataclass
 class SwitchBeeDimmer(SwitchBeeBaseDimmer, SwitchBeeBaseDevice):
     def __post_init__(self) -> None:
-        """Post initialization validate device type category as POWER_PLUG."""
+        """Post initialization validate device type category as Dimmer."""
+        if self.type != DeviceType.Dimmer:
+            raise ValueError("only Dimmer are allowed")
         super().__post_init__()
 
 
@@ -163,7 +190,9 @@ class SwitchBeeDimmer(SwitchBeeBaseDimmer, SwitchBeeBaseDevice):
 @dataclass
 class SwitchBeeTimerSwitch(SwitchBeeBaseTimer, SwitchBeeBaseDevice):
     def __post_init__(self) -> None:
-        """Post initialization validate device type category as POWER_PLUG."""
+        """Post initialization validate device type category as TimedPowerSwitch."""
+        if self.type != DeviceType.TimedPowerSwitch:
+            raise ValueError("only TimedPowerSwitch are allowed")
         super().__post_init__()
 
 
@@ -171,7 +200,9 @@ class SwitchBeeTimerSwitch(SwitchBeeBaseTimer, SwitchBeeBaseDevice):
 @dataclass
 class SwitchBeeScenario(SwitchBeeBaseDevice):
     def __post_init__(self) -> None:
-        """Post initialization validate device type category as POWER_PLUG."""
+        """Post initialization validate device type category as Scenario."""
+        if self.type != DeviceType.Scenario:
+            raise ValueError("only Scenario are allowed")
         super().__post_init__()
 
 
@@ -179,5 +210,7 @@ class SwitchBeeScenario(SwitchBeeBaseDevice):
 @dataclass
 class SwitchBeeGroupSwitch(SwitchBeeBaseSwitch, SwitchBeeBaseDevice):
     def __post_init__(self) -> None:
-        """Post initialization validate device type category as POWER_PLUG."""
+        """Post initialization validate device type category as GroupSwitch."""
+        if self.type != DeviceType.GroupSwitch:
+            raise ValueError("only GroupSwitch are allowed")
         super().__post_init__()

@@ -1,17 +1,22 @@
 # pySwitchbee
 
-Library to control SwitchBee IoT devices
+A Python module library to control SwitchBee smart home devices.
+
+![PyPI](https://img.shields.io/pypi/v/pyswitchbee?label=pypi%20package)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/pyswitchbee)
+
+![alt text](https://brands.home-assistant.io/switchbee/logo@2x.png)
 
 
-Usage:
+
+## Example code usage:
 
 ```python
-
 from asyncio import get_event_loop
 
 from aiohttp import ClientSession, ClientTimeout, TCPConnector
 from switchbee.api import CentralUnitAPI
-from switchbee.devices import DeviceType, SwitchState
+from switchbee.device import DeviceType, ApiStateCommand
 
 
 async def main():
@@ -20,7 +25,7 @@ async def main():
         timeout=ClientTimeout(total=3),
     )
 
-    cu = CentralUnitAPI("192.168.50.3", "user", "pass", session)
+    cu = CentralUnitAPI("192.168.50.2", "user", "pass", session)
     await cu.connect()
 
     print(f"Central Unit: {cu.name}")
@@ -33,28 +38,33 @@ async def main():
         # set the dimmer lights to 50% brightness
         if device.type == DeviceType.Dimmer:
             print(
-                "Discovered Dimmer device called {device.name} current brightness is {device.brigt}"
+                "Discovered Dimmer device called {device.name}"
+                " current brightness is {device.brigt}"
             )
             await cu.set_state(device.id, 50)
 
         # set the shutters position to 30% opened
         if device.type == DeviceType.Shutter:
             print(
-                "Discovered Shutter device called {device.name} current position is {device.position}"
+                "Discovered Shutter device called {device.name}"
+                " current position is {device.position}"
             )
             await cu.set_state(device.id, 30)
 
         # turn off switches
         if device.type == DeviceType.Switch:
             print(
-                "Discovered Switch device called {device.name} current state is {device.state}"
+                "Discovered Switch device called {device.name}"
+                " current state is {device.state}"
             )
-            await cu.set_state(device.id, SwitchState.OFF)
+            await cu.set_state(device.id, ApiStateCommand.OFF)
 
         # set timer switch on for 10 minutes
-        if device.type == DeviceType.TimePower:
+        if device.type == DeviceType.TimedPower:
             print(
-                "Discovered Timed Power device called {device.name} current state is {device.state} with {device.minutes_left} minutes left until shutdown"
+                "Discovered Timed Power device called {device.name}"
+                " current state is {device.state} with {device.minutes_left} "
+                "minutes left until shutdown"
             )
             await cu.set_state(device.id, 10)
 
@@ -66,6 +76,8 @@ if __name__ == "__main__":
     get_event_loop().run_until_complete(main())
     exit()
 ```
+
+## Using the CLI tool:
 
 Alternatively, it is possible to control SwitchBee using the cli tool `switchbee_cli.py` as following:
 

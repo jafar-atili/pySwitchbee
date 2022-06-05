@@ -2,12 +2,9 @@ import asyncio
 from argparse import ArgumentParser
 from dataclasses import asdict
 from pprint import PrettyPrinter
-from tkinter import ON
-from unicodedata import digit
 
 from aiohttp import ClientSession, ClientTimeout, TCPConnector
-from switchbee.api import CentralUnitAPI, DeviceType
-from switchbee.device import SwitchState
+from switchbee.api import CentralUnitAPI, DeviceType, ApiStateCommand
 
 import time
 printer = PrettyPrinter(indent=4)
@@ -125,8 +122,8 @@ async def main(args):
                         and device.position > 0
                         or device.type == DeviceType.Dimmer
                         and device.brightness > 0
-                        or device.type in [DeviceType.Switch, DeviceType.TimePower]
-                        and device.state == SwitchState.ON
+                        or device.type in [DeviceType.Switch, DeviceType.TimedPowerSwitch]
+                        and device.state == ApiStateCommand.ON
                     ):
                         printer.pprint(asdict(device))
                         print()
@@ -142,7 +139,7 @@ async def main(args):
 
         if args.state.isdigit():
             printer.pprint(await cu.set_state(args.device_id, int(args.state)))
-        elif args.state in [SwitchState.ON, SwitchState.OFF]:
+        elif args.state in [ApiStateCommand.ON, ApiStateCommand.OFF]:
             printer.pprint(await cu.set_state(args.device_id, args.state))
         else:
             print(f"Invalid state {args.state}, only ON|OFF|Number are allowed")
