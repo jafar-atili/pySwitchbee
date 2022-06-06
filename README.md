@@ -1,6 +1,6 @@
 # pySwitchbee
 
-A Python module library to control SwitchBee smart home devices.
+A Python module library to control [SwitchBee](https://www.switchbee.com) smart home devices.
 
 ![PyPI](https://img.shields.io/pypi/v/pyswitchbee?label=pypi%20package)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/pyswitchbee)
@@ -28,9 +28,9 @@ async def main():
     cu = CentralUnitAPI("192.168.50.2", "user", "pass", session)
     await cu.connect()
 
-    print(f"Central Unit: {cu.name}")
-    print(f"Central MAC: {cu.mac}")
-    print(f"Central Version: {cu.version}")
+    print(f"Central Unit Name: {cu.name}")
+    print(f"Central Unit MAC: {cu.mac}")
+    print(f"Central Unit Version: {cu.version}")
 
     devices = await cu.devices
 
@@ -79,7 +79,7 @@ if __name__ == "__main__":
 
 ## Using the CLI tool:
 
-Alternatively, it is possible to control SwitchBee using the cli tool `switchbee_cli.py` as following:
+Alternatively, it is possible to control [SwitchBee](https://www.switchbee.com) devices using the cli tool `switchbee_cli.py` as following:
 
 To list devices that currently on:
 
