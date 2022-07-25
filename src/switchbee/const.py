@@ -15,6 +15,7 @@ class ApiStatus:
     INVALID_TOKEN = "INVALID_TOKEN"
     TOKEN_EXPIRED = "TOKEN_EXPIRED"
     LOGIN_FAILED = "LOGIN_FAILED"
+    OFFLINE = "OFFLINE"
 
 
 class ApiAttribute:

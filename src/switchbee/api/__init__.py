@@ -16,7 +16,7 @@ from switchbee.device import (
     SwitchBeeTimerSwitch,
 )
 
-from switchbee.const import ApiAttribute, ApiCommand, ApiStatus, ApiStateCommand
+from switchbee.const import ApiAttribute, ApiCommand, ApiStatus
 from .utils import timestamp_now
 
 logger = getLogger(__name__)
@@ -27,6 +27,10 @@ class SwitchBeeError(Exception):
 
 
 class SwitchBeeTokenError(Exception):
+    pass
+
+
+class SwitchBeeDeviceOfflineError(Exception):
     pass
 
 
@@ -120,6 +124,12 @@ class CentralUnitAPI:
                                 raise SwitchBeeTokenError(
                                     json_result[ApiAttribute.STATUS]
                                 )
+
+                            if json_result[ApiAttribute.STATUS] == ApiStatus.OFFLINE:
+                                raise SwitchBeeDeviceOfflineError(
+                                    f"Central Unit replied with bad status ({json_result[ApiAttribute.STATUS]}): {json_result}"
+                                )
+
                             raise SwitchBeeError(
                                 f"Central Unit replied with bad status ({json_result[ApiAttribute.STATUS]}): {json_result}"
                             )
