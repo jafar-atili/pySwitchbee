@@ -1,10 +1,10 @@
-from asyncio import TimeoutError
 from datetime import timedelta
+from asyncio import TimeoutError
 from json import JSONDecodeError
 from logging import getLogger
 from typing import List, Union
 
-from aiohttp import ClientError, ClientSession
+from aiohttp import ClientSession
 from switchbee.device import SwitchBeeGroupSwitch
 from switchbee.device import (
     DeviceType,
@@ -34,7 +34,7 @@ class SwitchBeeDeviceOfflineError(Exception):
     pass
 
 
-TOKEN_EXPIRATION = int(timedelta(minutes=50).total_seconds()) * 1000
+TOKEN_EXPIRATION = int(timedelta(minutes=55).total_seconds()) * 1000
 
 
 class CentralUnitAPI:
@@ -45,7 +45,7 @@ class CentralUnitAPI:
         self._user: str = user
         self._password: str = password
         self._session: ClientSession = websession
-        self._token: str = ""
+        self._token: str = None
         self._token_expiration: int = 0
         self._login_count: int = -1  # we don't count the first login
         self._devices_map: dict[
@@ -101,7 +101,15 @@ class CentralUnitAPI:
     def reconnect_count(self) -> int:
         return self._login_count
 
-    async def connect(self):
+    async def login_if_needed(self) -> None:
+        if not self._token or (timestamp_now() >= self._token_expiration):
+            logger.info(
+                "Logging into the Central Unit due to %s",
+                "invalid token" if not self._token else " expiry",
+            )
+            await self._login()
+
+    async def connect(self) -> None:
         await self.fetch_configuration()
         await self.fetch_states()
 
@@ -121,6 +129,7 @@ class CentralUnitAPI:
                                 ApiStatus.INVALID_TOKEN,
                                 ApiStatus.TOKEN_EXPIRED,
                             ]:
+                                self._token = None
                                 raise SwitchBeeTokenError(
                                     json_result[ApiAttribute.STATUS]
                                 )
@@ -141,21 +150,12 @@ class CentralUnitAPI:
                     raise SwitchBeeError(
                         f"Request to the Central Unit failed with status={response.status}"
                     )
-
         except TimeoutError:
-            raise SwitchBeeError(f"Timeout error: {response}")
-        except ClientError as e:
-            raise SwitchBeeError(f"Client error: {e}")
+            raise SwitchBeeError(
+                f"Timed out while waiting for the Central Unit to reply"
+            )
 
     async def _send_request(self, command: ApiCommand, params: dict = {}) -> dict:
-        if not self._token or (
-            self._token and timestamp_now() >= self._token_expiration
-        ):
-            logger.info(
-                "Logging into the Central Unit %s",
-                "for the first time." if not self._token else " due to Token expiry.",
-            )
-            await self._login()
 
         return await self._post(
             {
@@ -192,24 +192,29 @@ class CentralUnitAPI:
         return self._token
 
     async def get_configuration(self):
+        await self.login_if_needed()
         return await self._send_request(ApiCommand.GET_CONF)
 
     async def get_multiple_states(self, ids: list):
         """returns JSON {'status': 'OK', 'data': [{'id': 212, 'state': 'OFF'}, {'id': 343, 'state': 'OFF'}]}"""
+        await self.login_if_needed()
         return await self._send_request(ApiCommand.GET_MULTI_STATES, ids)
 
     async def get_state(self, id: int):
         """returns JSON {'status': 'OK', 'data': 'OFF'}"""
+        await self.login_if_needed()
         return await self._send_request(ApiCommand.GET_STATE, id)
 
     async def set_state(self, id: int, state):
         """returns JSON {'status': 'OK', 'data': 'OFF/ON'}"""
+        await self.login_if_needed()
         return await self._send_request(
             ApiCommand.OPERATE, {"directive": "SET", "itemId": id, "value": state}
         )
 
     async def get_stats(self):
         """returns {'status': 'OK', 'data': {}} on my unit"""
+        await self.login_if_needed()
         return await self._send_request(ApiCommand.STATS)
 
     async def fetch_configuration(
@@ -221,6 +226,7 @@ class CentralUnitAPI:
             DeviceType.Shutter,
         ],
     ):
+        await self.login_if_needed()
         data = await self.get_configuration()
         if data[ApiAttribute.STATUS] != ApiStatus.OK:
             raise SwitchBeeError
