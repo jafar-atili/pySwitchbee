@@ -1,11 +1,10 @@
 from abc import ABC
 from dataclasses import dataclass, field
 from enum import Enum, unique
-from typing import Union, final
+from typing import List, Union, final
 
 from ..api.utils import timestamp_now
-
-from ..const import ApiDeviceHardware, ApiStateCommand, ApiDeviceType
+from ..const import ApiDeviceHardware, ApiDeviceType, ApiStateCommand
 
 
 @unique
@@ -20,6 +19,7 @@ class DeviceType(Enum):
     GroupSwitch = ApiDeviceType.GROUP_SWITCH, "Group Switch"
     TWO_WAY = ApiDeviceType.TWO_WAY, "Two Way"
     TimedPowerSwitch = ApiDeviceType.TIMED_POWER, "Timed Power Switch"
+    Thermostat = ApiDeviceType.THERMOSTAT, "Thermostat"
 
     def __new__(cls, *args, **kwds):
         obj = object.__new__(cls)
@@ -61,6 +61,24 @@ class HardwareType(Enum):
     @property
     def display(self):
         return self._display
+
+
+class ThermostatMode(Enum):
+    HEAT = "HEAT"
+    COOL = "COOL"
+    FAN = "FAN"
+
+
+class ThermostatFanSpeed(Enum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    AUTO = "AUTO"
+
+
+class ThermostatTemperatureUnit(Enum):
+    CELSIUS = "CELSIUS"
+    FAHRENHEIT = "FAHRENHEIT"
 
 
 @dataclass
@@ -157,6 +175,49 @@ class SwitchBeeBaseTimer(ABC):
 
 
 @dataclass
+class SwitchBeeBaseThermostat(ABC):
+
+    _modes: List[ThermostatMode] = field(init=False)
+    _unit: ThermostatTemperatureUnit = field(init=False)
+    _mode: ThermostatMode = field(init=False)
+    _fan: ThermostatFanSpeed = field(init=False)
+    _target_temperature: int = field(init=False)
+    _temperature: int = field(init=False)
+
+    @property
+    def modes(self) -> List[str]:
+        return self._modes
+
+    @property
+    def mode(self) -> ThermostatMode:
+        return self._mode
+
+    @mode.setter
+    def mode(self, value: ThermostatMode) -> None:
+        self._mode = value
+
+    @property
+    def fan(self) -> ThermostatFanSpeed:
+        return self._fan
+
+    @fan.setter
+    def mode(self, value: ThermostatFanSpeed) -> None:
+        self._fan = value
+
+    @property
+    def target_temperature(self) -> int:
+        return self._target_temperature
+
+    @target_temperature.setter
+    def mode(self, value: int) -> None:
+        self._target_temperature = value
+
+    @property
+    def temperature(self) -> int:
+        return self._temperature
+
+
+@dataclass
 class SwitchBeeSwitch(SwitchBeeBaseSwitch, SwitchBeeBaseDevice):
     def __post_init__(self) -> None:
         """Post initialization validate device type category as Switch."""
@@ -212,4 +273,16 @@ class SwitchBeeGroupSwitch(SwitchBeeBaseSwitch, SwitchBeeBaseDevice):
         """Post initialization validate device type category as GroupSwitch."""
         if self.type != DeviceType.GroupSwitch:
             raise ValueError("only GroupSwitch are allowed")
+        super().__post_init__()
+
+
+@final
+@dataclass
+class SwitchBeeThermostat(
+    SwitchBeeBaseThermostat, SwitchBeeBaseSwitch, SwitchBeeBaseDevice
+):
+    def __post_init__(self) -> None:
+        """Post initialization validate device type category as GroupSwitch."""
+        if self.type != DeviceType.Thermostat:
+            raise ValueError("only Thermostat are allowed")
         super().__post_init__()

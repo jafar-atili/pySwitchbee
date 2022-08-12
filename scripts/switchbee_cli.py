@@ -1,12 +1,14 @@
 import asyncio
+import time
 from argparse import ArgumentParser
 from dataclasses import asdict
 from pprint import PrettyPrinter
 
 from aiohttp import ClientSession, ClientTimeout, TCPConnector
-from switchbee.api import CentralUnitAPI, DeviceType, ApiStateCommand
 
-import time
+from switchbee.api import CentralUnitAPI, DeviceType
+from switchbee.device import ApiStateCommand
+
 printer = PrettyPrinter(indent=4)
 
 
@@ -53,7 +55,12 @@ def initialize_parser() -> ArgumentParser:
     subparsers = parser.add_subparsers(dest="action", description="supported actions")
     subparsers.add_parser("get_devices", help="print devices")
 
-    get_states_sp = subparsers.add_parser("get_states", help="get SwitchBee devices states")
+    get_states_sp = subparsers.add_parser(
+        "get_states", help="get SwitchBee devices states"
+    )
+
+    subparsers.add_parser("get_stats", help="get SwitchBee devices stats")
+    subparsers.add_parser("get_configuration", help="get SwitchBee configuration")
 
     get_states_sp.add_argument(
         "--only-on",
@@ -106,15 +113,14 @@ async def main(args):
     print(f"Central MAC: {cu.mac}")
     print(f"Central Version: {cu.version}")
 
-
     if args.action == "get_devices":
-        for device in cu.devices:
+        for device in cu.devices.values():
             printer.pprint(asdict(device))
 
     if args.action == "get_states":
         sec_delay = args.delay
         while sec_delay:
-            cu.fetch_states()
+            await cu.fetch_states()
             for device in cu.devices.values():
                 if args.only_on:
                     if (
@@ -122,7 +128,8 @@ async def main(args):
                         and device.position > 0
                         or device.type == DeviceType.Dimmer
                         and device.brightness > 0
-                        or device.type in [DeviceType.Switch, DeviceType.TimedPowerSwitch]
+                        or device.type
+                        in [DeviceType.Switch, DeviceType.TimedPowerSwitch]
                         and device.state == ApiStateCommand.ON
                     ):
                         printer.pprint(asdict(device))
@@ -144,7 +151,11 @@ async def main(args):
         else:
             print(f"Invalid state {args.state}, only ON|OFF|Number are allowed")
 
+    if args.action == "get_stats":
+        printer.pprint(await cu.get_stats())
 
+    if args.action == "get_configuration":
+        printer.pprint(await cu.get_configuration())
 
     await session.close()
 
@@ -152,6 +163,5 @@ async def main(args):
 if __name__ == "__main__":
     parser = initialize_parser()
     args = parser.parse_args()
-
-    asyncio.get_event_loop().run_until_complete(main(args))
+    asyncio.run(main(args))
     exit()

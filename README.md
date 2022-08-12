@@ -15,8 +15,9 @@ A Python module library to control [SwitchBee](https://www.switchbee.com) smart 
 from asyncio import get_event_loop
 
 from aiohttp import ClientSession, ClientTimeout, TCPConnector
+
 from switchbee.api import CentralUnitAPI
-from switchbee.device import DeviceType, ApiStateCommand
+from switchbee.device import ApiStateCommand, DeviceType
 
 
 async def main():

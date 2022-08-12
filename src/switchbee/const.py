@@ -38,6 +38,13 @@ class ApiAttribute:
     HARDWARE = "hw"
     VERSION = "version"
     LAST_CONF_CHANGE = "lastConfChange"
+    TEMPERATURE_UNITS = "temperatureUnits"
+    MODES = "modes"
+    POWER = "power"
+    MODE = "mode"
+    FAN = "fan"
+    CONFIGURED_TEMPERATURE = "configuredTemperature"
+    ROOM_TEMPERATURE = "roomTemperature"
 
 
 class ApiStateCommand:
@@ -64,3 +71,4 @@ class ApiDeviceType:
     SCENARIO = "SCENARIO"
     TIMED_POWER = "TIMED_POWER"
     OUTLET = "OUTLET"
+    THERMOSTAT = "THERMOSTAT"

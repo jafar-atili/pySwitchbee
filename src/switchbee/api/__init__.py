@@ -1,22 +1,18 @@
-from datetime import timedelta
 from asyncio import TimeoutError
+from datetime import timedelta
 from json import JSONDecodeError
 from logging import getLogger
 from typing import List, Union
 
 from aiohttp import ClientSession
-from switchbee.device import SwitchBeeGroupSwitch
-from switchbee.device import (
-    DeviceType,
-    HardwareType,
-    SwitchBeeDimmer,
-    SwitchBeeScenario,
-    SwitchBeeShutter,
-    SwitchBeeSwitch,
-    SwitchBeeTimerSwitch,
-)
+from device import ThermostatMode
 
 from switchbee.const import ApiAttribute, ApiCommand, ApiStatus
+from switchbee.device import (DeviceType, HardwareType, SwitchBeeDimmer,
+                              SwitchBeeGroupSwitch, SwitchBeeScenario,
+                              SwitchBeeShutter, SwitchBeeSwitch,
+                              SwitchBeeThermostat, SwitchBeeTimerSwitch)
+
 from .utils import timestamp_now
 
 logger = getLogger(__name__)
@@ -56,6 +52,8 @@ class CentralUnitAPI:
                 SwitchBeeShutter,
                 SwitchBeeScenario,
                 SwitchBeeTimerSwitch,
+                SwitchBeeGroupSwitch,
+                SwitchBeeThermostat,
             ],
         ] = {}
         self._mac = str
@@ -93,6 +91,7 @@ class CentralUnitAPI:
             SwitchBeeShutter,
             SwitchBeeTimerSwitch,
             SwitchBeeScenario,
+            SwitchBeeThermostat,
         ]
     ]:
         return self._devices_map.values()
@@ -224,6 +223,7 @@ class CentralUnitAPI:
             DeviceType.Dimmer,
             DeviceType.TimedPowerSwitch,
             DeviceType.Shutter,
+            DeviceType.Thermostat,
         ],
     ):
         await self.login_if_needed()
@@ -300,7 +300,18 @@ class CentralUnitAPI:
                         hardware=HardwareType(device_hw),
                         type=DeviceType.GroupSwitch,
                     )
-
+                elif device_type == DeviceType.Thermostat.value:
+                    self._devices_map[item[ApiAttribute.ID]] = SwitchBeeThermostat(
+                        id=item[ApiAttribute.ID],
+                        name=item[ApiAttribute.NAME],
+                        zone=zone[ApiAttribute.NAME],
+                        hardware=HardwareType(device_hw),
+                        type=DeviceType.Thermostat,
+                        modes=[
+                            ThermostatMode(mode) for mode in item[ApiAttribute.MODES]
+                        ],
+                        unit=item[ApiAttribute.TEMPERATURE_UNITS],
+                    )
                 else:
                     logger.warning(f"Unknown Type {item[ApiAttribute.TYPE]}")
 
@@ -320,6 +331,7 @@ class CentralUnitAPI:
                     DeviceType.Dimmer,
                     DeviceType.Shutter,
                     DeviceType.TimedPowerSwitch,
+                    DeviceType.Thermostat,
                 ]
             ]
         )
@@ -338,3 +350,19 @@ class CentralUnitAPI:
                 self._devices_map[device_id].state = device_state[ApiAttribute.STATE]
             elif self._devices_map[device_id].type == DeviceType.GroupSwitch:
                 self._devices_map[device_id].state = device_state[ApiAttribute.STATE]
+            elif self._devices_map[device_id].type == DeviceType.Thermostat:
+                self._devices_map[device_id].state = device_state[ApiAttribute.STATE][
+                    ApiAttribute.POWER
+                ]
+                self._devices_map[device_id].mode = device_state[ApiAttribute.STATE][
+                    ApiAttribute.MODE
+                ]
+                self._devices_map[device_id].fan = device_state[ApiAttribute.STATE][
+                    ApiAttribute.FAN
+                ]
+                self._devices_map[device_id].target_temperature = device_state[
+                    ApiAttribute.STATE
+                ][ApiAttribute.CONFIGURED_TEMPERATURE]
+                self._devices_map[device_id].temperature = device_state[
+                    ApiAttribute.STATE
+                ][ApiAttribute.ROOM_TEMPERATURE]

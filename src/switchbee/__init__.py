@@ -1,3 +1,3 @@
 name = "switchbee"
 
-__all__ = ['api', 'device']
+__all__ = ["api", "device"]
