@@ -5,13 +5,20 @@ from logging import getLogger
 from typing import List, Union
 
 from aiohttp import ClientSession
-from device import ThermostatMode
 
 from switchbee.const import ApiAttribute, ApiCommand, ApiStatus
-from switchbee.device import (DeviceType, HardwareType, SwitchBeeDimmer,
-                              SwitchBeeGroupSwitch, SwitchBeeScenario,
-                              SwitchBeeShutter, SwitchBeeSwitch,
-                              SwitchBeeThermostat, SwitchBeeTimerSwitch)
+from switchbee.device import (
+    DeviceType,
+    HardwareType,
+    SwitchBeeDimmer,
+    SwitchBeeGroupSwitch,
+    SwitchBeeScenario,
+    SwitchBeeShutter,
+    SwitchBeeSwitch,
+    SwitchBeeThermostat,
+    SwitchBeeTimerSwitch,
+    ThermostatMode,
+)
 
 from .utils import timestamp_now
 
