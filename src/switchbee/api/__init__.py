@@ -12,10 +12,12 @@ from switchbee.device import (
     HardwareType,
     SwitchBeeDimmer,
     SwitchBeeGroupSwitch,
+    SwitchBeeRollingScenario,
     SwitchBeeScenario,
     SwitchBeeShutter,
     SwitchBeeSwitch,
     SwitchBeeThermostat,
+    SwitchBeeTimedSwitch,
     SwitchBeeTimerSwitch,
     ThermostatMode,
 )
@@ -231,6 +233,9 @@ class CentralUnitAPI:
             DeviceType.TimedPowerSwitch,
             DeviceType.Shutter,
             DeviceType.Thermostat,
+            DeviceType.GroupSwitch,
+            DeviceType.RollingScenario,
+            DeviceType.Scenario,
         ],
     ):
         await self.login_if_needed()
@@ -246,8 +251,11 @@ class CentralUnitAPI:
             for item in zone[ApiAttribute.ITEMS]:
                 device_type = item[ApiAttribute.TYPE]
                 device_hw = item[ApiAttribute.HARDWARE]
-                if DeviceType(device_type) not in include:
-                    continue
+                try:
+                    if DeviceType(device_type) not in include:
+                        continue
+                except ValueError as exp:
+                    logger.warning("Unknown device type %s", device_type)
 
                 # add switch type device
                 if device_type == DeviceType.Switch.value:
@@ -295,7 +303,7 @@ class CentralUnitAPI:
                         hardware=HardwareType(device_hw),
                         type=DeviceType.Scenario,
                     )
-                # add group scenario only of type != VIRTUAL
+                # add group switch only of hardware type != VIRTUAL as we can't read their statuses
                 elif (
                     device_type == DeviceType.GroupSwitch.value
                     and device_hw != HardwareType.Virtual.value
@@ -307,6 +315,7 @@ class CentralUnitAPI:
                         hardware=HardwareType(device_hw),
                         type=DeviceType.GroupSwitch,
                     )
+
                 elif device_type == DeviceType.Thermostat.value:
                     self._devices_map[item[ApiAttribute.ID]] = SwitchBeeThermostat(
                         id=item[ApiAttribute.ID],
@@ -318,6 +327,25 @@ class CentralUnitAPI:
                             ThermostatMode(mode) for mode in item[ApiAttribute.MODES]
                         ],
                         unit=item[ApiAttribute.TEMPERATURE_UNITS],
+                    )
+                # add rolling scenario
+                elif device_type == DeviceType.RollingScenario.value:
+                    self._devices_map[item[ApiAttribute.ID]] = SwitchBeeRollingScenario(
+                        id=item[ApiAttribute.ID],
+                        name=item[ApiAttribute.NAME],
+                        zone=zone[ApiAttribute.NAME],
+                        hardware=HardwareType(device_hw),
+                        type=DeviceType.RollingScenario,
+                    )
+
+                # add timed switch scenario
+                elif device_type == DeviceType.TimedSwitch.value:
+                    self._devices_map[item[ApiAttribute.ID]] = SwitchBeeTimedSwitch(
+                        id=item[ApiAttribute.ID],
+                        name=item[ApiAttribute.NAME],
+                        zone=zone[ApiAttribute.NAME],
+                        hardware=HardwareType(device_hw),
+                        type=DeviceType.TimedSwitch,
                     )
                 else:
                     logger.warning(f"Unknown Type {item[ApiAttribute.TYPE]}")
@@ -339,6 +367,7 @@ class CentralUnitAPI:
                     DeviceType.Shutter,
                     DeviceType.TimedPowerSwitch,
                     DeviceType.Thermostat,
+                    DeviceType.TimedSwitch,
                 ]
             ]
         )
@@ -349,13 +378,14 @@ class CentralUnitAPI:
                 self._devices_map[device_id].brightness = device_state[
                     ApiAttribute.STATE
                 ]
-            elif self._devices_map[device_id].type == DeviceType.Switch:
-                self._devices_map[device_id].state = device_state[ApiAttribute.STATE]
             elif self._devices_map[device_id].type == DeviceType.Shutter:
                 self._devices_map[device_id].position = device_state[ApiAttribute.STATE]
-            elif self._devices_map[device_id].type == DeviceType.TimedPowerSwitch:
-                self._devices_map[device_id].state = device_state[ApiAttribute.STATE]
-            elif self._devices_map[device_id].type == DeviceType.GroupSwitch:
+            elif self._devices_map[device_id].type in [
+                DeviceType.Switch,
+                DeviceType.GroupSwitch,
+                DeviceType.TimedSwitch,
+                DeviceType.TimedPowerSwitch,
+            ]:
                 self._devices_map[device_id].state = device_state[ApiAttribute.STATE]
             elif self._devices_map[device_id].type == DeviceType.Thermostat:
                 self._devices_map[device_id].state = device_state[ApiAttribute.STATE][

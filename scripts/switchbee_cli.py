@@ -102,7 +102,7 @@ async def main(args):
 
     session = ClientSession(
         connector=TCPConnector(ssl=False),
-        timeout=ClientTimeout(total=3),
+        timeout=ClientTimeout(total=5),
     )
 
     cu = CentralUnitAPI(args.central_unit_ip, args.username, args.password, session)

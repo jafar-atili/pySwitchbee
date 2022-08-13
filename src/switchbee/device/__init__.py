@@ -20,6 +20,11 @@ class DeviceType(Enum):
     TWO_WAY = ApiDeviceType.TWO_WAY, "Two Way"
     TimedPowerSwitch = ApiDeviceType.TIMED_POWER, "Timed Power Switch"
     Thermostat = ApiDeviceType.THERMOSTAT, "Thermostat"
+    LockGroup = ApiDeviceType.LOCK_GROUP, "Lock Group"
+    TimedSwitch = ApiDeviceType.TIMED_SWITCH, "Timed Switch"
+    SOMFY = ApiDeviceType.SOMFY, "Somfy"
+    IrDevice = ApiDeviceType.IR_DEVICE, "Infra Red Device"
+    RollingScenario = ApiDeviceType.ROLLING_SCENARIO, "Rolling Scenario"
 
     def __new__(cls, *args, **kwds):
         obj = object.__new__(cls)
@@ -183,6 +188,8 @@ class SwitchBeeBaseThermostat(ABC):
     _fan: ThermostatFanSpeed = field(init=False)
     _target_temperature: int = field(init=False)
     _temperature: int = field(init=False)
+    _max_temp: int = 31
+    _min_temp: int = 16
 
     @property
     def modes(self) -> List[str]:
@@ -215,6 +222,18 @@ class SwitchBeeBaseThermostat(ABC):
     @property
     def temperature(self) -> int:
         return self._temperature
+
+    @property
+    def unit(self) -> ThermostatTemperatureUnit:
+        return self._unit
+
+    @property
+    def min_temperature(self) -> int:
+        return self._min_temp
+
+    @property
+    def max_temperature(self) -> int:
+        return self._max_temp
 
 
 @dataclass
@@ -268,11 +287,31 @@ class SwitchBeeScenario(SwitchBeeBaseDevice):
 
 @final
 @dataclass
+class SwitchBeeRollingScenario(SwitchBeeBaseDevice):
+    def __post_init__(self) -> None:
+        """Post initialization validate device type category as Rolling Scenario."""
+        if self.type != DeviceType.RollingScenario:
+            raise ValueError("only Rolling Scenario are allowed")
+        super().__post_init__()
+
+
+@final
+@dataclass
 class SwitchBeeGroupSwitch(SwitchBeeBaseSwitch, SwitchBeeBaseDevice):
     def __post_init__(self) -> None:
         """Post initialization validate device type category as GroupSwitch."""
         if self.type != DeviceType.GroupSwitch:
             raise ValueError("only GroupSwitch are allowed")
+        super().__post_init__()
+
+
+@final
+@dataclass
+class SwitchBeeTimedSwitch(SwitchBeeBaseSwitch, SwitchBeeBaseDevice):
+    def __post_init__(self) -> None:
+        """Post initialization validate device type category as TimedSwitch."""
+        if self.type != DeviceType.TimedSwitch:
+            raise ValueError("only TimedSwitch are allowed")
         super().__post_init__()
 
 
@@ -285,4 +324,14 @@ class SwitchBeeThermostat(
         """Post initialization validate device type category as GroupSwitch."""
         if self.type != DeviceType.Thermostat:
             raise ValueError("only Thermostat are allowed")
+        super().__post_init__()
+
+
+@final
+@dataclass
+class SwitchBeeLockGroup(SwitchBeeBaseSwitch, SwitchBeeBaseDevice):
+    def __post_init__(self) -> None:
+        """Post initialization validate device type category as Switch."""
+        if self.type != DeviceType.LockGroup:
+            raise ValueError("only lock group are allowed")
         super().__post_init__()
