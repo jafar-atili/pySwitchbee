@@ -233,9 +233,6 @@ class CentralUnitAPI:
             DeviceType.TimedPowerSwitch,
             DeviceType.Shutter,
             DeviceType.Thermostat,
-            DeviceType.GroupSwitch,
-            DeviceType.RollingScenario,
-            DeviceType.Scenario,
         ],
     ):
         await self.login_if_needed()
@@ -254,8 +251,9 @@ class CentralUnitAPI:
                 try:
                     if DeviceType(device_type) not in include:
                         continue
-                except ValueError as exp:
+                except ValueError:
                     logger.warning("Unknown device type %s", device_type)
+                    continue
 
                 # add switch type device
                 if device_type == DeviceType.Switch.value:
@@ -348,7 +346,9 @@ class CentralUnitAPI:
                         type=DeviceType.TimedSwitch,
                     )
                 else:
-                    logger.warning(f"Unknown Type {item[ApiAttribute.TYPE]}")
+                    logger.warning(
+                        f"Unsupported Type {item[ApiAttribute.TYPE]} {item[ApiAttribute.HARDWARE]}"
+                    )
 
     async def fetch_states(
         self,
