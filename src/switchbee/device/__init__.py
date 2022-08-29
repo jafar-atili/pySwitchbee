@@ -49,6 +49,9 @@ class HardwareType(Enum):
     Dimmable = ApiDeviceHardware.DIMMABLE_SWITCH, "Dimmable Switch"
     Shutter = ApiDeviceHardware.SHUTTER, "Shutter"
     TimedPowerSwitch = ApiDeviceHardware.TIMED_POWER_SWITCH, "Time Power Switch"
+    Thermostat = ApiDeviceHardware.THERMOSTAT, "Thermostat"
+    Somfy = ApiDeviceHardware.SOMFY, "Somfy"
+    SocketIR = ApiDeviceHardware.SOCKET_IR, "Socket IR"
 
     def __new__(cls, *args, **kwds):
         obj = object.__new__(cls)

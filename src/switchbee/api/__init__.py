@@ -41,6 +41,16 @@ class SwitchBeeDeviceOfflineError(Exception):
 
 TOKEN_EXPIRATION = int(timedelta(minutes=55).total_seconds()) * 1000
 
+STATE_MAP = [
+    DeviceType.Switch,
+    DeviceType.GroupSwitch,
+    DeviceType.Dimmer,
+    DeviceType.Shutter,
+    DeviceType.TimedPowerSwitch,
+    DeviceType.Thermostat,
+    DeviceType.TimedSwitch,
+]
+
 
 class CentralUnitAPI:
     def __init__(
@@ -53,6 +63,10 @@ class CentralUnitAPI:
         self._token: str = None
         self._token_expiration: int = 0
         self._login_count: int = -1  # we don't count the first login
+        self._mac = str
+        self._version = str
+        self._name = str
+        self._last_conf_change = int
         self._devices_map: dict[
             int,
             Union[
@@ -65,10 +79,6 @@ class CentralUnitAPI:
                 SwitchBeeThermostat,
             ],
         ] = {}
-        self._mac = str
-        self._version = str
-        self._name = str
-        self._last_conf_change = int
 
     @property
     def name(self) -> str:
@@ -100,6 +110,8 @@ class CentralUnitAPI:
             SwitchBeeShutter,
             SwitchBeeTimerSwitch,
             SwitchBeeScenario,
+            SwitchBeeRollingScenario,
+            SwitchBeeGroupSwitch,
             SwitchBeeThermostat,
         ]
     ]:
@@ -240,6 +252,9 @@ class CentralUnitAPI:
         if data[ApiAttribute.STATUS] != ApiStatus.OK:
             raise SwitchBeeError
 
+        # clear the old fetched devices
+        self._devices_map.clear()
+
         self._name = data[ApiAttribute.DATA][ApiAttribute.NAME]
         self._version = data[ApiAttribute.DATA][ApiAttribute.VERSION]
         self._mac = data[ApiAttribute.DATA][ApiAttribute.MAC]
@@ -249,11 +264,13 @@ class CentralUnitAPI:
                 device_type = item[ApiAttribute.TYPE]
                 device_hw = item[ApiAttribute.HARDWARE]
                 try:
-                    if DeviceType(device_type) not in include:
-                        continue
+                    _device_type = DeviceType(device_type)
                 except ValueError:
                     logger.warning("Unknown device type %s", device_type)
                     continue
+                else:
+                    if _device_type not in include:
+                        continue
 
                 # add switch type device
                 if device_type == DeviceType.Switch.value:
