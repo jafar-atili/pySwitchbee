@@ -198,6 +198,10 @@ class SwitchBeeBaseThermostat(ABC):
     def modes(self) -> List[str]:
         return self._modes
 
+    @modes.setter
+    def mode(self, value: List[ThermostatMode]) -> None:
+        self._modes = value
+
     @property
     def mode(self) -> ThermostatMode:
         return self._mode
