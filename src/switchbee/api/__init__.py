@@ -406,36 +406,35 @@ class CentralUnitAPI:
             ]
         )
 
-        for device_state in states[ApiAttribute.DATA]:
-            device_id = device_state[ApiAttribute.ID]
+        for device in states[ApiAttribute.DATA]:
+            device_id = device[ApiAttribute.ID]
             if self._devices_map[device_id].type == DeviceType.Dimmer:
-                self._devices_map[device_id].brightness = device_state[
-                    ApiAttribute.STATE
-                ]
+                self._devices_map[device_id].brightness = device[ApiAttribute.STATE]
             elif self._devices_map[device_id].type == DeviceType.Shutter:
-                self._devices_map[device_id].position = device_state[ApiAttribute.STATE]
+                self._devices_map[device_id].position = device[ApiAttribute.STATE]
             elif self._devices_map[device_id].type in [
                 DeviceType.Switch,
                 DeviceType.GroupSwitch,
                 DeviceType.TimedSwitch,
                 DeviceType.TimedPowerSwitch,
             ]:
-                self._devices_map[device_id].state = device_state[ApiAttribute.STATE]
+                self._devices_map[device_id].state = device[ApiAttribute.STATE]
             elif self._devices_map[device_id].type == DeviceType.Thermostat:
-                self._devices_map[device_id].state = device_state[ApiAttribute.STATE][
+                logger.error(device)
+                self._devices_map[device_id].state = device[ApiAttribute.STATE][
                     ApiAttribute.POWER
                 ]
-                self._devices_map[device_id].mode = device_state[ApiAttribute.STATE][
+                self._devices_map[device_id].mode = device[ApiAttribute.STATE][
                     ApiAttribute.MODE
                 ]
 
-                self._devices_map[device_id].fan = device_state[ApiAttribute.STATE][
+                self._devices_map[device_id].fan = device[ApiAttribute.STATE][
                     ApiAttribute.FAN
                 ]
 
-                self._devices_map[device_id].target_temperature = device_state[
+                self._devices_map[device_id].target_temperature = device[
                     ApiAttribute.STATE
                 ][ApiAttribute.CONFIGURED_TEMPERATURE]
-                self._devices_map[device_id].temperature = device_state[
-                    ApiAttribute.STATE
-                ][ApiAttribute.ROOM_TEMPERATURE]
+                self._devices_map[device_id].temperature = device[ApiAttribute.STATE][
+                    ApiAttribute.ROOM_TEMPERATURE
+                ]
