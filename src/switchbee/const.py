@@ -65,6 +65,7 @@ class ApiDeviceHardware:
     REPEATER = "REPEATER"
     GROUP_SWITCH = "GROUP_SWITCH"
     STIKER_SWITCH = "STIKER_SWITCH"
+    REGULAR_SWITCH = "REGULAR_SWITCH"
 
 
 class ApiDeviceType:

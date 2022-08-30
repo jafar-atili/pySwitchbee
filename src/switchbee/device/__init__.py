@@ -53,6 +53,7 @@ class HardwareType(Enum):
     Somfy = ApiDeviceHardware.SOMFY, "Somfy"
     SocketIR = ApiDeviceHardware.SOCKET_IR, "Socket IR"
     StickerSwitch = ApiDeviceHardware.STIKER_SWITCH, "Sticker Switch"
+    RegularSwitch = ApiDeviceHardware.REGULAR_SWITCH, "Regular Switch"
 
     def __new__(cls, *args, **kwds):
         obj = object.__new__(cls)

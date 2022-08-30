@@ -2,7 +2,7 @@ from asyncio import TimeoutError
 from datetime import timedelta
 from json import JSONDecodeError
 from logging import getLogger
-from typing import List, Union
+from typing import List, Type, Union
 
 from aiohttp import ClientSession
 
@@ -420,10 +420,18 @@ class CentralUnitAPI:
             ]:
                 self._devices_map[device_id].state = device[ApiAttribute.STATE]
             elif self._devices_map[device_id].type == DeviceType.Thermostat:
-                logger.error(device)
-                self._devices_map[device_id].state = device[ApiAttribute.STATE][
-                    ApiAttribute.POWER
-                ]
+                try:
+                    self._devices_map[device_id].state = device[ApiAttribute.STATE][
+                        ApiAttribute.POWER
+                    ]
+                except TypeError:
+                    logger.error(
+                        "%s: Recieved invalid state from CU, keeping the old one: %s",
+                        self._devices_map[device_id].name,
+                        device,
+                    )
+                    continue
+
                 self._devices_map[device_id].mode = device[ApiAttribute.STATE][
                     ApiAttribute.MODE
                 ]
