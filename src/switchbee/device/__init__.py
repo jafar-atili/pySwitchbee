@@ -52,6 +52,7 @@ class HardwareType(Enum):
     Thermostat = ApiDeviceHardware.THERMOSTAT, "Thermostat"
     Somfy = ApiDeviceHardware.SOMFY, "Somfy"
     SocketIR = ApiDeviceHardware.SOCKET_IR, "Socket IR"
+    StickerSwitch = ApiDeviceHardware.STIKER_SWITCH, "Sticker Switch"
 
     def __new__(cls, *args, **kwds):
         obj = object.__new__(cls)
@@ -69,24 +70,6 @@ class HardwareType(Enum):
     @property
     def display(self):
         return self._display
-
-
-class ThermostatMode(Enum):
-    HEAT = "HEAT"
-    COOL = "COOL"
-    FAN = "FAN"
-
-
-class ThermostatFanSpeed(Enum):
-    LOW = "LOW"
-    MEDIUM = "MEDIUM"
-    HIGH = "HIGH"
-    AUTO = "AUTO"
-
-
-class ThermostatTemperatureUnit(Enum):
-    CELSIUS = "CELSIUS"
-    FAHRENHEIT = "FAHRENHEIT"
 
 
 @dataclass
@@ -185,62 +168,14 @@ class SwitchBeeBaseTimer(ABC):
 @dataclass
 class SwitchBeeBaseThermostat(ABC):
 
-    _modes: List[ThermostatMode] = field(init=False)
-    _unit: ThermostatTemperatureUnit = field(init=False)
-    _mode: ThermostatMode = field(init=False)
-    _fan: ThermostatFanSpeed = field(init=False)
-    _target_temperature: int = field(init=False)
-    _temperature: int = field(init=False)
-    _max_temp: int = 31
-    _min_temp: int = 16
-
-    @property
-    def modes(self) -> List[str]:
-        return self._modes
-
-    @modes.setter
-    def mode(self, value: List[ThermostatMode]) -> None:
-        self._modes = value
-
-    @property
-    def mode(self) -> ThermostatMode:
-        return self._mode
-
-    @mode.setter
-    def mode(self, value: ThermostatMode) -> None:
-        self._mode = value
-
-    @property
-    def fan(self) -> ThermostatFanSpeed:
-        return self._fan
-
-    @fan.setter
-    def mode(self, value: ThermostatFanSpeed) -> None:
-        self._fan = value
-
-    @property
-    def target_temperature(self) -> int:
-        return self._target_temperature
-
-    @target_temperature.setter
-    def mode(self, value: int) -> None:
-        self._target_temperature = value
-
-    @property
-    def temperature(self) -> int:
-        return self._temperature
-
-    @property
-    def unit(self) -> ThermostatTemperatureUnit:
-        return self._unit
-
-    @property
-    def min_temperature(self) -> int:
-        return self._min_temp
-
-    @property
-    def max_temperature(self) -> int:
-        return self._max_temp
+    modes: List[str]
+    unit: str
+    mode: str = field(init=False)
+    fan: str = field(init=False)
+    target_temperature: int = field(init=False)
+    temperature: int = field(init=False)
+    max_temperature: int = 31
+    min_temperature: int = 16
 
 
 @dataclass
@@ -328,7 +263,7 @@ class SwitchBeeThermostat(
     SwitchBeeBaseThermostat, SwitchBeeBaseSwitch, SwitchBeeBaseDevice
 ):
     def __post_init__(self) -> None:
-        """Post initialization validate device type category as GroupSwitch."""
+        """Post initialization validate device type category as Thermostat."""
         if self.type != DeviceType.Thermostat:
             raise ValueError("only Thermostat are allowed")
         super().__post_init__()

@@ -64,6 +64,7 @@ class ApiDeviceHardware:
     IRRIGATION = "IRRIGATION"
     REPEATER = "REPEATER"
     GROUP_SWITCH = "GROUP_SWITCH"
+    STIKER_SWITCH = "STIKER_SWITCH"
 
 
 class ApiDeviceType:
@@ -83,3 +84,21 @@ class ApiDeviceType:
     LOUVERED_SHUTTER = "LOUVERED_SHUTTER"
     SOMFY = "SOMFY"
     ROLLING_SCENARIO = "ROLLING_SCENARIO"
+
+
+class ThermostatMode:
+    HEAT = "HEAT"
+    COOL = "COOL"
+    FAN = "FAN"
+
+
+class ThermostatFanSpeed:
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    AUTO = "AUTO"
+
+
+class ThermostatTemperatureUnit:
+    CELSIUS = "CELSIUS"
+    FAHRENHEIT = "FAHRENHEIT"
