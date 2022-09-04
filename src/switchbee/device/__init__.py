@@ -11,13 +11,13 @@ from ..const import ApiDeviceHardware, ApiDeviceType, ApiStateCommand
 class DeviceType(Enum):
     """Enum class representing the device's type."""
 
-    Dimmer = ApiDeviceType.DIMMER, "Dimming Light"
+    Dimmer = ApiDeviceType.DIMMER, "Light"
     Switch = ApiDeviceType.SWITCH, "Switch"
     Shutter = ApiDeviceType.SHUTTER, "Shutter"
     Scenario = ApiDeviceType.SCENARIO, "Scenario"
     Repeater = ApiDeviceType.REPEATER, "Repeater"
     GroupSwitch = ApiDeviceType.GROUP_SWITCH, "Group Switch"
-    TWO_WAY = ApiDeviceType.TWO_WAY, "Two Way"
+    TwoWay = ApiDeviceType.TWO_WAY, "Two Way"
     TimedPowerSwitch = ApiDeviceType.TIMED_POWER, "Timed Power Switch"
     Thermostat = ApiDeviceType.THERMOSTAT, "Thermostat"
     LockGroup = ApiDeviceType.LOCK_GROUP, "Lock Group"
@@ -54,6 +54,7 @@ class HardwareType(Enum):
     SocketIR = ApiDeviceHardware.SOCKET_IR, "Socket IR"
     StickerSwitch = ApiDeviceHardware.STIKER_SWITCH, "Sticker Switch"
     RegularSwitch = ApiDeviceHardware.REGULAR_SWITCH, "Regular Switch"
+    Repeater = ApiDeviceHardware.REPEATER, "Repeater"
 
     def __new__(cls, *args, **kwds):
         obj = object.__new__(cls)
@@ -277,4 +278,14 @@ class SwitchBeeLockGroup(SwitchBeeBaseSwitch, SwitchBeeBaseDevice):
         """Post initialization validate device type category as Switch."""
         if self.type != DeviceType.LockGroup:
             raise ValueError("only lock group are allowed")
+        super().__post_init__()
+
+
+@final
+@dataclass
+class SwitchBeeTwoWay(SwitchBeeBaseSwitch, SwitchBeeBaseDevice):
+    def __post_init__(self) -> None:
+        """Post initialization validate device type category as TwoWay."""
+        if self.type != DeviceType.TwoWay:
+            raise ValueError("only Two Way are allowed")
         super().__post_init__()

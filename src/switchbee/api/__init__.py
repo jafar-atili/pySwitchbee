@@ -23,6 +23,7 @@ from switchbee.device import (
     SwitchBeeThermostat,
     SwitchBeeTimedSwitch,
     SwitchBeeTimerSwitch,
+    SwitchBeeTwoWay,
 )
 
 from .utils import timestamp_now
@@ -133,7 +134,7 @@ class CentralUnitAPI:
             await self._login()
 
     async def connect(self) -> None:
-        await self.fetch_configuration()
+        await self.fetch_configuration(None)
         await self.fetch_states()
 
     async def _post(self, body: dict) -> dict:
@@ -242,13 +243,7 @@ class CentralUnitAPI:
 
     async def fetch_configuration(
         self,
-        include: list[DeviceType] = [
-            DeviceType.Switch,
-            DeviceType.Dimmer,
-            DeviceType.TimedPowerSwitch,
-            DeviceType.Shutter,
-            DeviceType.Thermostat,
-        ],
+        include: list[DeviceType] = [],
     ):
         await self.login_if_needed()
         data = await self.get_configuration()
@@ -261,6 +256,9 @@ class CentralUnitAPI:
         self._name = data[ApiAttribute.DATA][ApiAttribute.NAME]
         self._version = data[ApiAttribute.DATA][ApiAttribute.VERSION]
         self._mac = data[ApiAttribute.DATA][ApiAttribute.MAC]
+
+        if include is None:
+            return
 
         for zone in data[ApiAttribute.DATA][ApiAttribute.ZONES]:
             for item in zone[ApiAttribute.ITEMS]:
@@ -285,7 +283,7 @@ class CentralUnitAPI:
                     )
                     continue
 
-                if device_type not in include:
+                if include and device_type not in include:
                     logger.info(
                         "Skipping %s (%s)", device_type.value, item[ApiAttribute.NAME]
                     )
@@ -370,9 +368,18 @@ class CentralUnitAPI:
                         type=device_type,
                     )
 
-                # add timed switch scenario
+                # add timed switch
                 elif device_type == DeviceType.TimedSwitch:
                     self._devices_map[item[ApiAttribute.ID]] = SwitchBeeTimedSwitch(
+                        id=item[ApiAttribute.ID],
+                        name=item[ApiAttribute.NAME],
+                        zone=zone[ApiAttribute.NAME],
+                        hardware=device_hw,
+                        type=device_type,
+                    )
+                # add two way
+                elif device_type == DeviceType.TwoWay:
+                    self._devices_map[item[ApiAttribute.ID]] = SwitchBeeTwoWay(
                         id=item[ApiAttribute.ID],
                         name=item[ApiAttribute.NAME],
                         zone=zone[ApiAttribute.NAME],
