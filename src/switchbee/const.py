@@ -95,7 +95,7 @@ class ThermostatMode:
 
 class ThermostatFanSpeed:
     LOW = "LOW"
-    MEDIUM = "MEDIUM"
+    MEDIUM = "MED"
     HIGH = "HIGH"
     AUTO = "AUTO"
 
