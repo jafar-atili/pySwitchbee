@@ -48,7 +48,7 @@ class HardwareType(Enum):
     Virtual = ApiDeviceHardware.VIRTUAL, "Virtual"
     Dimmable = ApiDeviceHardware.DIMMABLE_SWITCH, "Dimmable Switch"
     Shutter = ApiDeviceHardware.SHUTTER, "Shutter"
-    TimedPowerSwitch = ApiDeviceHardware.TIMED_POWER_SWITCH, "Time Power Switch"
+    TimedPowerSwitch = ApiDeviceHardware.TIMED_POWER_SWITCH, "Timed Power Switch"
     Thermostat = ApiDeviceHardware.THERMOSTAT, "Thermostat"
     Somfy = ApiDeviceHardware.SOMFY, "Somfy"
     SocketIR = ApiDeviceHardware.SOCKET_IR, "Socket IR"
@@ -80,7 +80,7 @@ class SwitchBeeBaseDevice(ABC):
     name: str
     zone: str
     type: DeviceType
-    hardware: str
+    hardware: HardwareType
 
     def __post_init__(self) -> None:
         """Post initialization, set last_data_update to the instantiation datetime."""
