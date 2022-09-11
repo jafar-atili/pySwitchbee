@@ -95,7 +95,7 @@ class ThermostatMode:
 
 class ThermostatFanSpeed:
     LOW = "LOW"
-    MEDIUM = "MED"
+    MEDIUM = "MEDIUM"
     HIGH = "HIGH"
     AUTO = "AUTO"
 
@@ -103,3 +103,6 @@ class ThermostatFanSpeed:
 class ThermostatTemperatureUnit:
     CELSIUS = "CELSIUS"
     FAHRENHEIT = "FAHRENHEIT"
+
+
+SWITCHBEE_BRAND = "SwitchBee"

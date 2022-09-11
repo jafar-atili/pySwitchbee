@@ -46,10 +46,10 @@ class DeviceType(Enum):
 
 class HardwareType(Enum):
     Virtual = ApiDeviceHardware.VIRTUAL, "Virtual"
-    Dimmable = ApiDeviceHardware.DIMMABLE_SWITCH, "Dimmable Switch"
+    Dimmable = ApiDeviceHardware.DIMMABLE_SWITCH, "Switch"
     Shutter = ApiDeviceHardware.SHUTTER, "Shutter"
     TimedPowerSwitch = ApiDeviceHardware.TIMED_POWER_SWITCH, "Timed Power Switch"
-    Thermostat = ApiDeviceHardware.THERMOSTAT, "Thermostat"
+    Thermostat = ApiDeviceHardware.THERMOSTAT, "CoolSwitch"
     Somfy = ApiDeviceHardware.SOMFY, "Somfy"
     SocketIR = ApiDeviceHardware.SOCKET_IR, "Socket IR"
     StickerSwitch = ApiDeviceHardware.STIKER_SWITCH, "Sticker Switch"
@@ -85,6 +85,7 @@ class SwitchBeeBaseDevice(ABC):
     def __post_init__(self) -> None:
         """Post initialization, set last_data_update to the instantiation datetime."""
         self.last_data_update = timestamp_now()
+        self.unit_id = self.id // 10
 
     def __hash__(self):
         return self.id

@@ -2,7 +2,7 @@ from asyncio import TimeoutError
 from datetime import timedelta
 from json import JSONDecodeError
 from logging import getLogger
-from typing import List, Type, Union
+from typing import List, Union
 
 from aiohttp import ClientSession
 
@@ -84,6 +84,8 @@ class CentralUnitAPI:
             ],
         ] = {}
 
+        self._modules_map: dict[int, set] = {}
+
     @property
     def name(self) -> str:
         return self._name
@@ -124,6 +126,9 @@ class CentralUnitAPI:
     @property
     def reconnect_count(self) -> int:
         return self._login_count
+
+    def module_display(self, unit_id: int):
+        return " and ".join(list(self._modules_map[unit_id]))
 
     async def login_if_needed(self) -> None:
         if not self._token or (timestamp_now() >= self._token_expiration):
@@ -252,7 +257,7 @@ class CentralUnitAPI:
 
         # clear the old fetched devices
         self._devices_map.clear()
-
+        self._modules_map.clear()
         self._name = data[ApiAttribute.DATA][ApiAttribute.NAME]
         self._version = data[ApiAttribute.DATA][ApiAttribute.VERSION]
         self._mac = data[ApiAttribute.DATA][ApiAttribute.MAC]
@@ -390,6 +395,15 @@ class CentralUnitAPI:
                     logger.warning(
                         f"Unsupported Type {item[ApiAttribute.TYPE]} {item[ApiAttribute.HARDWARE]}"
                     )
+                    continue
+
+                unit_id = self._devices_map[item[ApiAttribute.ID]].unit_id
+                if unit_id not in self._modules_map:
+                    self._modules_map[unit_id] = set()
+
+                self._modules_map[unit_id].add(
+                    self._devices_map[item[ApiAttribute.ID]].hardware.display
+                )
 
     async def fetch_states(
         self,
