@@ -106,3 +106,9 @@ class ThermostatTemperatureUnit:
 
 
 SWITCHBEE_BRAND = "SwitchBee"
+
+
+class SomfyCommand:
+    UP = "UP"
+    DOWN = "DOWN"
+    MY = "MY"

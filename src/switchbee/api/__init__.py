@@ -24,6 +24,7 @@ from switchbee.device import (
     SwitchBeeTimedSwitch,
     SwitchBeeTimerSwitch,
     SwitchBeeTwoWay,
+    SwitchBeeSomfy,
 )
 
 from .utils import timestamp_now
@@ -391,6 +392,18 @@ class CentralUnitAPI:
                         hardware=device_hw,
                         type=device_type,
                     )
+
+                # add somfy
+                elif device_type == DeviceType.Somfy:
+                    self._devices_map[item[ApiAttribute.ID]] = SwitchBeeSomfy(
+                        id=item[ApiAttribute.ID],
+                        name=item[ApiAttribute.NAME],
+                        zone=zone[ApiAttribute.NAME],
+                        hardware=device_hw,
+                        type=device_type,
+                    )
+                # add gro
+
                 else:
                     logger.warning(
                         f"Unsupported Type {item[ApiAttribute.TYPE]} {item[ApiAttribute.HARDWARE]}"

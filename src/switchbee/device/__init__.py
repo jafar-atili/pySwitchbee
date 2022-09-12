@@ -22,7 +22,7 @@ class DeviceType(Enum):
     Thermostat = ApiDeviceType.THERMOSTAT, "Thermostat"
     LockGroup = ApiDeviceType.LOCK_GROUP, "Lock Group"
     TimedSwitch = ApiDeviceType.TIMED_SWITCH, "Timed Switch"
-    SOMFY = ApiDeviceType.SOMFY, "Somfy"
+    Somfy = ApiDeviceType.SOMFY, "Somfy"
     IrDevice = ApiDeviceType.IR_DEVICE, "Infra Red Device"
     RollingScenario = ApiDeviceType.ROLLING_SCENARIO, "Rolling Scenario"
 
@@ -289,4 +289,14 @@ class SwitchBeeTwoWay(SwitchBeeBaseSwitch, SwitchBeeBaseDevice):
         """Post initialization validate device type category as TwoWay."""
         if self.type != DeviceType.TwoWay:
             raise ValueError("only Two Way are allowed")
+        super().__post_init__()
+
+
+@final
+@dataclass
+class SwitchBeeSomfy(SwitchBeeBaseDevice):
+    def __post_init__(self) -> None:
+        """Post initialization validate device type category as Scenario."""
+        if self.type != DeviceType.Somfy:
+            raise ValueError("only Scenario are allowed")
         super().__post_init__()
