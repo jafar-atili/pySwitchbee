@@ -1,4 +1,5 @@
 from asyncio import TimeoutError
+from aiohttp.client_exceptions import ClientConnectorError
 from datetime import timedelta
 from json import JSONDecodeError
 from logging import getLogger
@@ -180,10 +181,13 @@ class CentralUnitAPI:
                     raise SwitchBeeError(
                         f"Request to the Central Unit failed with status={response.status}"
                     )
-        except TimeoutError:
+        except TimeoutError as exp:
             raise SwitchBeeError(
-                f"Timed out while waiting for the Central Unit to reply"
-            )
+                "Timed out while waiting for the Central Unit to reply"
+            ) from exp
+
+        except ClientConnectorError as exp:
+            raise SwitchBeeError("Failed to communicate with the Central Unit") from exp
 
     async def _send_request(self, command: ApiCommand, params: dict = {}) -> dict:
 
