@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from asyncio import TimeoutError
 from aiohttp.client_exceptions import ClientConnectorError
 from datetime import timedelta
