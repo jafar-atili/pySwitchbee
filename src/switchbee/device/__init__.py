@@ -93,10 +93,10 @@ class SwitchBeeBaseDevice(ABC):
 
 @dataclass
 class SwitchBeeBaseSwitch(ABC):
-    _state: ApiStateCommand = field(init=False, default=None)
+    _state: str | None = field(init=False, default=None)
 
     @property
-    def state(self) -> ApiStateCommand:
+    def state(self) -> str | None:
         return self._state
 
     @state.setter
@@ -106,10 +106,10 @@ class SwitchBeeBaseSwitch(ABC):
 
 @dataclass
 class SwitchBeeBaseShutter(ABC):
-    _position: int = field(init=False, repr=False, default=None)
+    _position: int | None = field(init=False, repr=False, default=None)
 
     @property
-    def position(self) -> int:
+    def position(self) -> int | None:
         return self._position
 
     @position.setter
@@ -134,10 +134,9 @@ class SwitchBeeBaseDimmer(ABC):
 
     @brightness.setter
     def brightness(self, value: Union[str, int]) -> None:
-
-        if value == ApiStateCommand.OFF or value == 0:
+        if value == ApiStateCommand.OFF:
             self._brightness = 0
-        elif value == ApiStateCommand.ON or value == 100:
+        elif value == ApiStateCommand.ON:
             self._brightness = 100
         else:
             self._brightness = int(value)
@@ -146,18 +145,14 @@ class SwitchBeeBaseDimmer(ABC):
 @dataclass
 class SwitchBeeBaseTimer(ABC):
     _minutes_left: int = field(init=False)
-    _state: ApiStateCommand = field(init=False)
+    _state: str | int = field(init=False)
 
     @property
-    def state(self) -> ApiStateCommand:
+    def state(self) -> str | int:
         return self._state
 
-    @property
-    def minutes_left(self) -> int:
-        return self._minutes_left
-
     @state.setter
-    def state(self, value: Union[str, int]) -> None:
+    def state(self, value: str | int) -> None:
 
         if value:
             if value == ApiStateCommand.OFF:
@@ -166,6 +161,11 @@ class SwitchBeeBaseTimer(ABC):
             else:
                 self._minutes_left = int(value)
                 self._state = ApiStateCommand.ON
+
+    @property
+    def minutes_left(self) -> int:
+        return self._minutes_left
+
 
 
 @dataclass

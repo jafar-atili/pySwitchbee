@@ -3,7 +3,7 @@ from aiohttp.client_exceptions import ClientConnectorError
 from datetime import timedelta
 from json import JSONDecodeError
 from logging import getLogger
-from typing import List, Union
+from typing import Any, List, Union
 
 from aiohttp import ClientSession
 
@@ -26,6 +26,7 @@ from switchbee.device import (
     SwitchBeeTimerSwitch,
     SwitchBeeTwoWay,
     SwitchBeeSomfy,
+    SwitchBeeBaseDevice,
 )
 
 from .utils import timestamp_now
@@ -66,64 +67,45 @@ class CentralUnitAPI:
         self._user: str = user
         self._password: str = password
         self._session: ClientSession = websession
-        self._token: str = None
+        self._token: str | None = None
         self._token_expiration: int = 0
         self._login_count: int = -1  # we don't count the first login
-        self._mac = str
-        self._version = str
-        self._name = str
-        self._last_conf_change = int
+        self._mac: str | None = None
+        self._version: str | None = None
+        self._name: str | None = None
+        self._last_conf_change: int = 0
         self._devices_map: dict[
             int,
-            Union[
-                SwitchBeeDimmer,
-                SwitchBeeSwitch,
-                SwitchBeeShutter,
-                SwitchBeeScenario,
-                SwitchBeeTimerSwitch,
-                SwitchBeeGroupSwitch,
-                SwitchBeeThermostat,
-            ],
+            SwitchBeeBaseDevice,
         ] = {}
 
         self._modules_map: dict[int, set] = {}
 
     @property
-    def name(self) -> str:
+    def name(self) -> str | None:
         return self._name
 
     @property
-    def version(self) -> str:
+    def version(self) -> str | None:
         return self._version
 
     @property
-    def mac(self) -> str:
+    def mac(self) -> str | None:
         return self._mac
 
     @property
-    def devices(self) -> dict:
+    def devices(self) -> dict[int, SwitchBeeBaseDevice]:
         return self._devices_map
 
     @property
-    def last_conf_change(self) -> str:
+    def last_conf_change(self) -> int:
         return self._last_conf_change
 
     @property
     def devices_list(
         self,
-    ) -> List[
-        Union[
-            SwitchBeeSwitch,
-            SwitchBeeDimmer,
-            SwitchBeeShutter,
-            SwitchBeeTimerSwitch,
-            SwitchBeeScenario,
-            SwitchBeeRollingScenario,
-            SwitchBeeGroupSwitch,
-            SwitchBeeThermostat,
-        ]
-    ]:
-        return self._devices_map.values()
+    ) -> List[SwitchBeeBaseDevice]:
+        return list(self._devices_map.values())
 
     @property
     def reconnect_count(self) -> int:
@@ -189,7 +171,7 @@ class CentralUnitAPI:
         except ClientConnectorError as exp:
             raise SwitchBeeError("Failed to communicate with the Central Unit") from exp
 
-    async def _send_request(self, command: ApiCommand, params: dict = {}) -> dict:
+    async def _send_request(self, command: str, params: Any = {}) -> dict:
 
         return await self._post(
             {
@@ -199,7 +181,7 @@ class CentralUnitAPI:
             }
         )
 
-    async def _login(self) -> str:
+    async def _login(self) -> None:
         try:
             resp = await self._post(
                 {
@@ -222,8 +204,6 @@ class CentralUnitAPI:
         # calculate one hour from now and set it to be the expiration time of the token
         # self._token_expiration = resp[ApiAttribute.DATA][ApiAttribute.EXPIRATION]
         self._token_expiration = timestamp_now() + TOKEN_EXPIRATION
-
-        return self._token
 
     async def get_configuration(self):
         await self.login_if_needed()
@@ -253,7 +233,7 @@ class CentralUnitAPI:
 
     async def fetch_configuration(
         self,
-        include: list[DeviceType] = [],
+        include: list[DeviceType] | None = [],
     ):
         await self.login_if_needed()
         data = await self.get_configuration()
