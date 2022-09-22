@@ -428,6 +428,10 @@ class CentralUnitAPI:
 
         for device in states[ApiAttribute.DATA]:
             device_id = device[ApiAttribute.ID]
+
+            if device_id not in self._devices_map:
+                continue
+
             if self._devices_map[device_id].type == DeviceType.Dimmer:
                 self._devices_map[device_id].brightness = device[ApiAttribute.STATE]
             elif self._devices_map[device_id].type == DeviceType.Shutter:

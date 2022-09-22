@@ -120,6 +120,7 @@ async def main(args):
     if args.action == "get_states":
         sec_delay = args.delay
         while sec_delay:
+            await cu.fetch_configuration()
             await cu.fetch_states()
             for device in cu.devices.values():
                 if args.only_on:
