@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from abc import ABC
 from dataclasses import dataclass, field
 from enum import Enum, unique
-from typing import List, Union, final
+from typing import List, final
 
 from ..api.utils import timestamp_now
 from ..const import ApiDeviceHardware, ApiDeviceType, ApiStateCommand
@@ -28,21 +27,21 @@ class DeviceType(Enum):
     IrDevice = ApiDeviceType.IR_DEVICE, "Infra Red Device"
     RollingScenario = ApiDeviceType.ROLLING_SCENARIO, "Rolling Scenario"
 
-    def __new__(cls, *args, **kwds):
+    def __new__(cls, *args, **kwds):  # type: ignore
         obj = object.__new__(cls)
         obj._value_ = args[0]
         return obj
 
     # ignore the first param since it's already set by __new__
-    def __init__(self, _: str, display: str = None):
+    def __init__(self, _: str, display: str = "") -> None:
         self._display = display
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.display
 
     # this makes sure that the description is read-only
     @property
-    def display(self):
+    def display(self) -> str:
         return self._display
 
 
@@ -58,26 +57,26 @@ class HardwareType(Enum):
     RegularSwitch = ApiDeviceHardware.REGULAR_SWITCH, "Regular Switch"
     Repeater = ApiDeviceHardware.REPEATER, "Repeater"
 
-    def __new__(cls, *args, **kwds):
+    def __new__(cls, *args, **kwds):  # type: ignore
         obj = object.__new__(cls)
         obj._value_ = args[0]
         return obj
 
     # ignore the first param since it's already set by __new__
-    def __init__(self, _: str, display: str = None):
+    def __init__(self, _: str, display: str = "") -> None:
         self._display = display
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.display
 
     # this makes sure that the description is read-only
     @property
-    def display(self):
+    def display(self) -> str:
         return self._display
 
 
 @dataclass
-class SwitchBeeBaseDevice(ABC):
+class SwitchBeeBaseDevice:
     id: int
     name: str
     zone: str
@@ -89,12 +88,12 @@ class SwitchBeeBaseDevice(ABC):
         self.last_data_update = timestamp_now()
         self.unit_id = self.id // 10
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return self.id
 
 
 @dataclass
-class SwitchBeeBaseSwitch(ABC):
+class SwitchBeeBaseSwitch:
     _state: str | None = field(init=False, default=None)
 
     @property
@@ -107,7 +106,7 @@ class SwitchBeeBaseSwitch(ABC):
 
 
 @dataclass
-class SwitchBeeBaseShutter(ABC):
+class SwitchBeeBaseShutter:
     _position: int | None = field(init=False, repr=False, default=None)
 
     @property
@@ -115,7 +114,7 @@ class SwitchBeeBaseShutter(ABC):
         return self._position
 
     @position.setter
-    def position(self, value: Union[str, int]) -> None:
+    def position(self, value: str | int) -> None:
 
         if value == ApiStateCommand.OFF:
             self._position = 0
@@ -126,7 +125,7 @@ class SwitchBeeBaseShutter(ABC):
 
 
 @dataclass
-class SwitchBeeBaseDimmer(ABC):
+class SwitchBeeBaseDimmer:
 
     _brightness: int = field(init=False)
 
@@ -135,7 +134,7 @@ class SwitchBeeBaseDimmer(ABC):
         return self._brightness
 
     @brightness.setter
-    def brightness(self, value: Union[str, int]) -> None:
+    def brightness(self, value: str | int) -> None:
         if value == ApiStateCommand.OFF:
             self._brightness = 0
         elif value == ApiStateCommand.ON:
@@ -145,7 +144,7 @@ class SwitchBeeBaseDimmer(ABC):
 
 
 @dataclass
-class SwitchBeeBaseTimer(ABC):
+class SwitchBeeBaseTimer:
     _minutes_left: int = field(init=False)
     _state: str | int = field(init=False)
 
@@ -169,9 +168,8 @@ class SwitchBeeBaseTimer(ABC):
         return self._minutes_left
 
 
-
 @dataclass
-class SwitchBeeBaseThermostat(ABC):
+class SwitchBeeBaseThermostat:
 
     modes: List[str]
     unit: str
@@ -183,6 +181,7 @@ class SwitchBeeBaseThermostat(ABC):
     min_temperature: int = 16
 
 
+@final
 @dataclass
 class SwitchBeeSwitch(SwitchBeeBaseSwitch, SwitchBeeBaseDevice):
     def __post_init__(self) -> None:

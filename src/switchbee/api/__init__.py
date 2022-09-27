@@ -5,7 +5,7 @@ from aiohttp.client_exceptions import ClientConnectorError
 from datetime import timedelta
 from json import JSONDecodeError
 from logging import getLogger
-from typing import Any, List, Union
+from typing import Any, List
 
 from aiohttp import ClientSession
 
@@ -78,7 +78,17 @@ class CentralUnitAPI:
         self._last_conf_change: int = 0
         self._devices_map: dict[
             int,
-            SwitchBeeBaseDevice,
+            SwitchBeeSwitch
+            | SwitchBeeGroupSwitch
+            | SwitchBeeTimedSwitch
+            | SwitchBeeShutter
+            | SwitchBeeSomfy
+            | SwitchBeeDimmer
+            | SwitchBeeThermostat
+            | SwitchBeeScenario
+            | SwitchBeeRollingScenario
+            | SwitchBeeTimerSwitch
+            | SwitchBeeTwoWay,
         ] = {}
 
         self._modules_map: dict[int, set] = {}
@@ -96,7 +106,22 @@ class CentralUnitAPI:
         return self._mac
 
     @property
-    def devices(self) -> dict[int, SwitchBeeBaseDevice]:
+    def devices(
+        self,
+    ) -> dict[
+        int,
+        SwitchBeeSwitch
+        | SwitchBeeGroupSwitch
+        | SwitchBeeTimedSwitch
+        | SwitchBeeShutter
+        | SwitchBeeSomfy
+        | SwitchBeeDimmer
+        | SwitchBeeThermostat
+        | SwitchBeeScenario
+        | SwitchBeeRollingScenario
+        | SwitchBeeTimerSwitch
+        | SwitchBeeTwoWay,
+    ]:
         return self._devices_map
 
     @property
@@ -113,7 +138,7 @@ class CentralUnitAPI:
     def reconnect_count(self) -> int:
         return self._login_count
 
-    def module_display(self, unit_id: int):
+    def module_display(self, unit_id: int) -> str:
         return " and ".join(list(self._modules_map[unit_id]))
 
     async def login_if_needed(self) -> None:
@@ -135,7 +160,7 @@ class CentralUnitAPI:
             ) as response:
                 if response.status == 200:
                     try:
-                        json_result = await response.json(
+                        json_result: dict = await response.json(
                             content_type=None, encoding="utf8"
                         )
                         if json_result[ApiAttribute.STATUS] != ApiStatus.OK:
@@ -207,28 +232,28 @@ class CentralUnitAPI:
         # self._token_expiration = resp[ApiAttribute.DATA][ApiAttribute.EXPIRATION]
         self._token_expiration = timestamp_now() + TOKEN_EXPIRATION
 
-    async def get_configuration(self):
+    async def get_configuration(self) -> dict:
         await self.login_if_needed()
         return await self._send_request(ApiCommand.GET_CONF)
 
-    async def get_multiple_states(self, ids: list):
+    async def get_multiple_states(self, ids: list) -> dict:
         """returns JSON {'status': 'OK', 'data': [{'id': 212, 'state': 'OFF'}, {'id': 343, 'state': 'OFF'}]}"""
         await self.login_if_needed()
         return await self._send_request(ApiCommand.GET_MULTI_STATES, ids)
 
-    async def get_state(self, id: int):
+    async def get_state(self, id: int) -> dict:
         """returns JSON {'status': 'OK', 'data': 'OFF'}"""
         await self.login_if_needed()
         return await self._send_request(ApiCommand.GET_STATE, id)
 
-    async def set_state(self, id: int, state):
+    async def set_state(self, id: int, state: str | int) -> dict:
         """returns JSON {'status': 'OK', 'data': 'OFF/ON'}"""
         await self.login_if_needed()
         return await self._send_request(
             ApiCommand.OPERATE, {"directive": "SET", "itemId": id, "value": state}
         )
 
-    async def get_stats(self):
+    async def get_stats(self) -> dict:
         """returns {'status': 'OK', 'data': {}} on my unit"""
         await self.login_if_needed()
         return await self._send_request(ApiCommand.STATS)
@@ -236,7 +261,7 @@ class CentralUnitAPI:
     async def fetch_configuration(
         self,
         include: list[DeviceType] | None = [],
-    ):
+    ) -> None:
         await self.login_if_needed()
         data = await self.get_configuration()
         if data[ApiAttribute.STATUS] != ApiStatus.OK:
@@ -406,7 +431,7 @@ class CentralUnitAPI:
 
     async def fetch_states(
         self,
-    ):
+    ) -> None:
 
         states = await self.get_multiple_states(
             [
@@ -426,47 +451,46 @@ class CentralUnitAPI:
             ]
         )
 
-        for device in states[ApiAttribute.DATA]:
-            device_id = device[ApiAttribute.ID]
+        for device_state in states[ApiAttribute.DATA]:
+            device_id = device_state[ApiAttribute.ID]
 
             if device_id not in self._devices_map:
                 continue
 
-            if self._devices_map[device_id].type == DeviceType.Dimmer:
-                self._devices_map[device_id].brightness = device[ApiAttribute.STATE]
-            elif self._devices_map[device_id].type == DeviceType.Shutter:
-                self._devices_map[device_id].position = device[ApiAttribute.STATE]
-            elif self._devices_map[device_id].type in [
-                DeviceType.Switch,
-                DeviceType.GroupSwitch,
-                DeviceType.TimedSwitch,
-                DeviceType.TimedPowerSwitch,
-            ]:
-                self._devices_map[device_id].state = device[ApiAttribute.STATE]
-            elif self._devices_map[device_id].type == DeviceType.Thermostat:
+            device = self._devices_map[device_id]
+
+            if isinstance(device, SwitchBeeDimmer):
+                device.brightness = device_state[ApiAttribute.STATE]
+            elif isinstance(device, SwitchBeeShutter):
+                device.position = device_state[ApiAttribute.STATE]
+            elif isinstance(
+                device,
+                (
+                    SwitchBeeSwitch,
+                    SwitchBeeGroupSwitch,
+                    SwitchBeeTimedSwitch,
+                    SwitchBeeTimerSwitch,
+                ),
+            ):
+
+                device.state = device_state[ApiAttribute.STATE]
+            elif isinstance(device, SwitchBeeThermostat):
                 try:
-                    self._devices_map[device_id].state = device[ApiAttribute.STATE][
-                        ApiAttribute.POWER
-                    ]
+                    device.state = device_state[ApiAttribute.STATE][ApiAttribute.POWER]
                 except TypeError:
                     logger.error(
-                        "%s: Recieved invalid state from CU, keeping the old one: %s",
-                        self._devices_map[device_id].name,
-                        device,
+                        "%s: Received invalid state from CU, keeping the old one: %s",
+                        device.name,
+                        device_state,
                     )
                     continue
 
-                self._devices_map[device_id].mode = device[ApiAttribute.STATE][
-                    ApiAttribute.MODE
-                ]
+                device.mode = device_state[ApiAttribute.STATE][ApiAttribute.MODE]
+                device.fan = device_state[ApiAttribute.STATE][ApiAttribute.FAN]
 
-                self._devices_map[device_id].fan = device[ApiAttribute.STATE][
-                    ApiAttribute.FAN
+                device.target_temperature = device_state[ApiAttribute.STATE][
+                    ApiAttribute.CONFIGURED_TEMPERATURE
                 ]
-
-                self._devices_map[device_id].target_temperature = device[
-                    ApiAttribute.STATE
-                ][ApiAttribute.CONFIGURED_TEMPERATURE]
-                self._devices_map[device_id].temperature = device[ApiAttribute.STATE][
+                device.temperature = device_state[ApiAttribute.STATE][
                     ApiAttribute.ROOM_TEMPERATURE
                 ]
