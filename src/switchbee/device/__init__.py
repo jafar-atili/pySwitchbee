@@ -1,8 +1,9 @@
 from __future__ import annotations
+from abc import ABC
 
 from dataclasses import dataclass, field
 from enum import Enum, unique
-from typing import List, final
+from typing import Any, List, final
 
 from ..api.utils import timestamp_now
 from ..const import ApiDeviceHardware, ApiDeviceType, ApiStateCommand
@@ -27,7 +28,7 @@ class DeviceType(Enum):
     IrDevice = ApiDeviceType.IR_DEVICE, "Infra Red Device"
     RollingScenario = ApiDeviceType.ROLLING_SCENARIO, "Rolling Scenario"
 
-    def __new__(cls, *args, **kwds):  # type: ignore
+    def __new__(cls, *args: Any, **kwds: Any):  # type: ignore
         obj = object.__new__(cls)
         obj._value_ = args[0]
         return obj
@@ -57,7 +58,7 @@ class HardwareType(Enum):
     RegularSwitch = ApiDeviceHardware.REGULAR_SWITCH, "Regular Switch"
     Repeater = ApiDeviceHardware.REPEATER, "Repeater"
 
-    def __new__(cls, *args, **kwds):  # type: ignore
+    def __new__(cls, *args: Any, **kwds: Any):  # type: ignore
         obj = object.__new__(cls)
         obj._value_ = args[0]
         return obj
@@ -76,7 +77,7 @@ class HardwareType(Enum):
 
 
 @dataclass
-class SwitchBeeBaseDevice:
+class SwitchBeeBaseDevice(ABC):
     id: int
     name: str
     zone: str
@@ -93,7 +94,7 @@ class SwitchBeeBaseDevice:
 
 
 @dataclass
-class SwitchBeeBaseSwitch:
+class SwitchBeeBaseSwitch(ABC):
     _state: str | None = field(init=False, default=None)
 
     @property
@@ -106,7 +107,7 @@ class SwitchBeeBaseSwitch:
 
 
 @dataclass
-class SwitchBeeBaseShutter:
+class SwitchBeeBaseShutter(ABC):
     _position: int | None = field(init=False, repr=False, default=None)
 
     @property
@@ -125,7 +126,7 @@ class SwitchBeeBaseShutter:
 
 
 @dataclass
-class SwitchBeeBaseDimmer:
+class SwitchBeeBaseDimmer(ABC):
 
     _brightness: int = field(init=False)
 
@@ -144,7 +145,7 @@ class SwitchBeeBaseDimmer:
 
 
 @dataclass
-class SwitchBeeBaseTimer:
+class SwitchBeeBaseTimer(ABC):
     _minutes_left: int = field(init=False)
     _state: str | int = field(init=False)
 
@@ -169,7 +170,7 @@ class SwitchBeeBaseTimer:
 
 
 @dataclass
-class SwitchBeeBaseThermostat:
+class SwitchBeeBaseThermostat(ABC):
 
     modes: List[str]
     unit: str
