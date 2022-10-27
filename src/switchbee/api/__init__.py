@@ -246,7 +246,7 @@ class CentralUnitAPI:
         await self.login_if_needed()
         return await self._send_request(ApiCommand.GET_STATE, id)
 
-    async def set_state(self, id: int, state: str | int) -> dict:
+    async def set_state(self, id: int, state: str | int | dict[str, int | str]) -> dict:
         """returns JSON {'status': 'OK', 'data': 'OFF/ON'}"""
         await self.login_if_needed()
         return await self._send_request(
