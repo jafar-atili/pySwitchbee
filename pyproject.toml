@@ -17,11 +17,9 @@ classifiers = [
   "Topic :: Software Development :: Libraries :: Python Modules",
   "Typing :: Typed"
 ]
-dependencies = ["asyncio", "aiohttp"]
+dependencies = [ "aiohttp" ]
 requires-python = ">=3.9"
 
-
-  
 [project.urls]
 homepage = "https://pypi.org/project/pyswitchbee/"
 repository = "https://github.com/jafar-atili/pySwitchbee/"
