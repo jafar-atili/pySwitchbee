@@ -289,6 +289,12 @@ class CentralUnitAPI:
                         item[ApiAttribute.NAME],
                     )
                     continue
+                except KeyError:
+                    logger.error(
+                        "device %s missing type attribute, Skipping",
+                        item[ApiAttribute.NAME],
+                    )
+                    continue
 
                 try:
                     device_hw = HardwareType(item[ApiAttribute.HARDWARE])
@@ -296,6 +302,12 @@ class CentralUnitAPI:
                     logger.warning(
                         "Unknown hardware type %s (%s), Skipping",
                         item[ApiAttribute.HARDWARE],
+                        item[ApiAttribute.NAME],
+                    )
+                    continue
+                except KeyError:
+                    logger.error(
+                        "device %s missing hardware attribute, Skipping",
                         item[ApiAttribute.NAME],
                     )
                     continue
