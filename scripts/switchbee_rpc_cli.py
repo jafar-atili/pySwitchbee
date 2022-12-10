@@ -9,7 +9,7 @@ from typing import Any
 
 from aiohttp import ClientSession, ClientTimeout, TCPConnector
 
-from switchbee.wsrpc_api import CentralUnitWsRPC
+from switchbee.api.wsrpc import CentralUnitWsRPC
 from switchbee.device import ApiStateCommand
 
 printer = PrettyPrinter(indent=4)
@@ -108,7 +108,7 @@ async def main(args):
         timeout=ClientTimeout(total=10),
     ) as session:
 
-        cu = CentralUnitWsRPC(session, args.central_unit_ip, args.username, args.password, on_notification)
+        cu = CentralUnitWsRPC(args.central_unit_ip, args.username, args.password, session, on_notification)
 
         await cu.connect()
         await cu.fetch_configuration()

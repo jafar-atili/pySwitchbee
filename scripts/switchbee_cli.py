@@ -6,8 +6,8 @@ from pprint import PrettyPrinter
 
 from aiohttp import ClientSession, ClientTimeout, TCPConnector
 
-from switchbee.api import CentralUnitAPI, DeviceType
-from switchbee.device import ApiStateCommand
+from switchbee.api.polling import CentralUnitPolling
+from switchbee.device import ApiStateCommand, DeviceType
 
 printer = PrettyPrinter(indent=4)
 
@@ -105,8 +105,7 @@ async def main(args):
         timeout=ClientTimeout(total=5),
     )
 
-    cu = CentralUnitAPI(args.central_unit_ip, args.username, args.password, session)
-
+    cu = CentralUnitPolling(args.central_unit_ip, args.username, args.password, session)
     await cu.connect()
 
     print(f"Central Unit: {cu.name}")

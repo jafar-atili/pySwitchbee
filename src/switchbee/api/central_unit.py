@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-from asyncio import Future, TimeoutError, create_task, tasks
-from dataclasses import dataclass
 from datetime import timedelta
 from logging import getLogger
-from typing import Any, Callable, List
+from typing import Any, List
+from abc import ABC, abstractmethod
 
-import async_timeout
-from aiohttp import ClientSession, ClientWebSocketResponse, WSMessage, WSMsgType
-from aiohttp.client_exceptions import ClientError, WSServerHandshakeError
+from aiohttp import ClientSession
 from switchbee.const import ApiAttribute, ApiCommand, ApiStatus
 from switchbee.device import (
     DeviceType,
@@ -44,18 +41,6 @@ class SwitchBeeDeviceOfflineError(Exception):
     pass
 
 
-class DeviceConnectionError(Exception):
-    pass
-
-
-class InvalidMessage(Exception):
-    pass
-
-
-class ConnectionClosed(Exception):
-    pass
-
-
 TOKEN_EXPIRATION = int(timedelta(minutes=55).total_seconds()) * 1000
 
 STATE_MAP = [
@@ -69,84 +54,19 @@ STATE_MAP = [
 ]
 
 
-async def receive_json_or_raise(msg: WSMessage) -> dict[str, Any]:
-    """Receive json or raise."""
-    if msg.type in (WSMsgType.CLOSE, WSMsgType.CLOSED, WSMsgType.CLOSING):
-        raise ConnectionClosed("Connection was closed.")
-
-    if msg.type == WSMsgType.ERROR:
-        raise InvalidMessage("Received message error")
-
-    if msg.type != WSMsgType.TEXT:
-        raise InvalidMessage(f"Received non-Text message: {msg.type}")
-
-    try:
-        data: dict[str, Any] = msg.json()
-    except ValueError as err:
-        raise InvalidMessage(f"Received invalid JSON: {msg.data}") from err
-
-    return data
-
-
-@dataclass
-class SessionData:
-    """SessionData (src/dst/auth) class."""
-
-    src: str | None
-    dst: str | None
-    auth: dict[str, Any] | None
-
-
-class RPCCall:
-    """RPCCall class."""
+class CentralUnitAPI(ABC):
+    _login_count: int = -1  # we don't count the first login
+    _token: str | None = None
+    _token_expiration: int = 0
 
     def __init__(
-        self,
-        call_id: int,
-        command: str | None,
-        params: dict[str, Any] | int | list | None,
-        token: str | None,
-        session: SessionData,
-    ):
-        """Initialize RPC class."""
-        self.auth = session.auth
-        self.call_id = call_id
-        self.command = command
-        self.params = params
-        self.token = token
-        self.src = session.src
-        self.dst = session.dst
-        self.resolve: Future = Future()
-
-    @property
-    def request_frame(self) -> dict[str, Any]:
-        """Request frame."""
-        msg: dict[str, Any] = {"commandId": self.call_id, "command": self.command}
-
-        if self.params:
-            msg["params"] = self.params
-
-        if self.token:
-            msg["token"] = self.token
-
-        return msg
-
-
-class CentralUnitWsRPC:
-    def __init__(
-        self, aiohttp_session: ClientSession ,central_unit: str, user: str, password: str, on_notification: Callable
+        self, ip_address: str, user: str, password: str, aiohttp_session: ClientSession
     ) -> None:
-        self._ip_address: str = central_unit
-        self._client: ClientWebSocketResponse | None = None
-        self._receive_task: tasks.Task[None] | None = None
-        self._aiohttp_session: ClientSession = aiohttp_session
-        self._calls: dict[int, RPCCall] = {}
-        self._on_notification = on_notification
-        self._user: str = user
+        self._ip_address: str = ip_address
+        self._username: str = user
         self._password: str = password
-        self._token: str | None = None
-        self._token_expiration: int = 0
-        self._login_count: int = -1  # we don't count the first login
+        self._aiohttp_session: ClientSession = aiohttp_session
+
         self._mac: str | None = None
         self._version: str | None = None
         self._name: str | None = None
@@ -167,8 +87,6 @@ class CentralUnitWsRPC:
         ] = {}
 
         self._modules_map: dict[int, set] = {}
-        self._call_id = 0
-        self._session = SessionData(f"swb-{id(self)}", None, None)
 
     @property
     def name(self) -> str | None:
@@ -215,16 +133,6 @@ class CentralUnitWsRPC:
     def reconnect_count(self) -> int:
         return self._login_count
 
-    @property
-    def connected(self) -> bool:
-        """Return if we're currently connected."""
-        return self._client is not None and not self._client.closed
-
-    @property
-    def _next_id(self) -> int:
-        self._call_id += 1
-        return self._call_id
-
     def module_display(self, unit_id: int) -> str:
         return " and ".join(list(self._modules_map[unit_id]))
 
@@ -236,125 +144,28 @@ class CentralUnitWsRPC:
             )
             await self._login()
 
-    async def fetch_config(self) -> None:
-        await self.fetch_configuration()
-        await self.fetch_states()
-
+    @abstractmethod
     async def connect(self) -> None:
-        if self.connected:
-            raise RuntimeError("Already connected")
+        raise NotImplementedError
 
-        logger.debug("Trying to connect to device at %s", self._ip_address)
-        try:
-            self._client = await self._aiohttp_session.ws_connect(
-                f"http://{self._ip_address}:7891"
-            )
-        except (
-            WSServerHandshakeError,
-            ClientError,
-        ) as err:
-            raise DeviceConnectionError(err) from err
-
-        except TimeoutError as err:
-            raise DeviceConnectionError(err) from err
-
-        self._receive_task = create_task(self._rx_msgs())
-
-        logger.info("Connected to %s", self._ip_address)
-
-    async def _send_json(self, data: dict[str, Any]) -> None:
-        """Send json frame to device."""
-        logger.debug("send(%s): %s", self._ip_address, data)
-        assert self._client
-        await self._client.send_json(data)
-
-    async def _rx_msgs(self) -> None:
-        assert self._client
-
-        while not self._client.closed:
-            try:
-                msg = await self._client.receive()
-                frame = await receive_json_or_raise(msg)
-                logger.debug("recv(%s): %s", self._ip_address, frame)
-            except InvalidMessage as err:
-                logger.error("Invalid Message from host %s: %s", self._ip_address, err)
-            except ConnectionClosed:
-                break
-
-            if not self._client.closed:
-                self.handle_frame(frame)
-
-        logger.debug("Websocket client connection from %s closed", self._ip_address)
-
-        for call_item in self._calls.values():
-            call_item.resolve.cancel()
-        self._calls.clear()
-
-        if not self._client.closed:
-            await self._client.close()
-
-        self._client = None
-
-    def handle_frame(self, frame: dict[str, Any]) -> None:
-        """Handle RPC frame."""
-
-        if command_id := frame.get("commandId"):
-            # looks like a response
-            if command_id not in self._calls:
-                logger.warning("Response for an unknown request id: %s", command_id)
-                return
-
-            call = self._calls.pop(command_id)
-            if not call.resolve.cancelled():
-                call.resolve.set_result(frame)
-
-        else:
-            if notification_type := frame.get("notificationType"):
-                # this is a notification
-                logger.debug("Notification %s %s", notification_type, frame)
-                self._on_notification(frame)
-            else:
-                logger.warning("Invalid frame: %s", frame)
-
+    @abstractmethod
     async def call(
         self,
         command: str | None = None,
         params: dict[str, Any] | int | list | None = None,
-        token: str | None = None,
         timeout: int = 10,
     ) -> dict[str, Any]:
-        """Websocket RPC call."""
+        raise NotImplementedError
 
-        if self._client is None:
-            raise RuntimeError("Not connected")
+    @abstractmethod
+    async def _send_request(self, command: str, params: Any = {}) -> dict:
+        raise NotImplementedError
 
-        call = RPCCall(self._next_id, command, params, token, self._session)
-        self._calls[call.call_id] = call
-
-        try:
-            async with async_timeout.timeout(timeout):
-                await self._send_json(call.request_frame)
-                resp: dict[str, Any] = await call.resolve
-        except TimeoutError as exc:
-            raise DeviceConnectionError(call) from exc
-
-        logger.debug("%s -> %s", call.params, resp)
-        return resp
-
-    async def _send_request(
-        self, command: str, params: dict[str, Any] | int | list | None = None
-    ) -> dict:
-        return await self.call(command, params, self._token)
-
+    @abstractmethod
     async def _login(self) -> None:
+        raise NotImplementedError
 
-        resp = await self.call(
-            ApiCommand.LOGIN,
-            {
-                ApiAttribute.USER: self._user,
-                ApiAttribute.PASS: self._password,
-            },
-        )
+    def _update_login(self, resp: dict[str, Any]) -> None:
 
         self._login_count += 1
         self._token = resp[ApiAttribute.DATA][ApiAttribute.TOKEN]
@@ -377,7 +188,7 @@ class CentralUnitWsRPC:
         await self.login_if_needed()
         return await self._send_request(ApiCommand.GET_STATE, id)
 
-    async def set_state(self, id: int, state: str | int | dict[str, str | int]) -> dict:
+    async def set_state(self, id: int, state: str | int | dict[str, int | str]) -> dict:
         """returns JSON {'status': 'OK', 'data': 'OFF/ON'}"""
         await self.login_if_needed()
         return await self._send_request(
@@ -590,10 +401,10 @@ class CentralUnitWsRPC:
                     self._devices_map[item[ApiAttribute.ID]].hardware.display
                 )
 
-
     async def fetch_states(
         self,
     ) -> None:
+
         states = await self.get_multiple_states(
             [
                 dev
@@ -611,6 +422,7 @@ class CentralUnitWsRPC:
                 ]
             ]
         )
+
         for device_state in states[ApiAttribute.DATA]:
             device_id = device_state[ApiAttribute.ID]
 
