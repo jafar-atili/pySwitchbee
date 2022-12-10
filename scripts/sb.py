@@ -108,9 +108,9 @@ async def main(args):
         timeout=ClientTimeout(total=10),
     ) as session:
 
-        cu = CentralUnitWsRPC(args.central_unit_ip, args.username, args.password, on_notification)
+        cu = CentralUnitWsRPC(session, args.central_unit_ip, args.username, args.password, on_notification)
 
-        await cu.connect(session)
+        await cu.connect()
         await cu.fetch_configuration()
         await cu.fetch_states()
 

@@ -134,11 +134,12 @@ class RPCCall:
 
 class CentralUnitWsRPC:
     def __init__(
-        self, central_unit: str, user: str, password: str, on_notification: Callable
+        self, aiohttp_session: ClientSession ,central_unit: str, user: str, password: str, on_notification: Callable
     ) -> None:
         self._ip_address: str = central_unit
         self._client: ClientWebSocketResponse | None = None
         self._receive_task: tasks.Task[None] | None = None
+        self._aiohttp_session: ClientSession = aiohttp_session
         self._calls: dict[int, RPCCall] = {}
         self._on_notification = on_notification
         self._user: str = user
@@ -239,13 +240,13 @@ class CentralUnitWsRPC:
         await self.fetch_configuration()
         await self.fetch_states()
 
-    async def connect(self, aiohttp_session: ClientSession) -> None:
+    async def connect(self) -> None:
         if self.connected:
             raise RuntimeError("Already connected")
 
         logger.debug("Trying to connect to device at %s", self._ip_address)
         try:
-            self._client = await aiohttp_session.ws_connect(
+            self._client = await self._aiohttp_session.ws_connect(
                 f"http://{self._ip_address}:7891"
             )
         except (
