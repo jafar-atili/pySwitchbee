@@ -291,6 +291,12 @@ class CentralUnitAPI:
                     )
                     continue
 
+                if include and device_type not in include:
+                    logger.info(
+                        "Skipping %s (%s)", device_type.value, item[ApiAttribute.NAME]
+                    )
+                    continue
+
                 try:
                     device_hw = HardwareType(item[ApiAttribute.HARDWARE])
                 except ValueError:
@@ -307,17 +313,30 @@ class CentralUnitAPI:
                     )
                     continue
 
-                if include and device_type not in include:
-                    logger.info(
-                        "Skipping %s (%s)", device_type.value, item[ApiAttribute.NAME]
+                try:
+                    device_id = int(item[ApiAttribute.ID])
+                except KeyError:
+                    logger.error(
+                        "device %s missing id attribute, Skipping",
+                        item,
                     )
                     continue
+
+                try:
+                    device_name = item[ApiAttribute.NAME]
+                except KeyError:
+                    logger.error(
+                        "device %s missing name attribute, Skipping",
+                        item,
+                    )
+                    device_name = "Unknown"
+
 
                 # add switch type device
                 if device_type == DeviceType.Switch:
                     self._devices_map[item[ApiAttribute.ID]] = SwitchBeeSwitch(
-                        id=item[ApiAttribute.ID],
-                        name=item[ApiAttribute.NAME],
+                        id=device_id,
+                        name=device_name,
                         zone=zone[ApiAttribute.NAME],
                         hardware=device_hw,
                         type=device_type,
@@ -325,8 +344,8 @@ class CentralUnitAPI:
                 # add dimmer (light) device
                 elif device_type == DeviceType.Dimmer:
                     self._devices_map[item[ApiAttribute.ID]] = SwitchBeeDimmer(
-                        id=item[ApiAttribute.ID],
-                        name=item[ApiAttribute.NAME],
+                        id=device_id,
+                        name=device_name,
                         zone=zone[ApiAttribute.NAME],
                         hardware=device_hw,
                         type=device_type,
@@ -334,8 +353,8 @@ class CentralUnitAPI:
                 # add shutter device
                 elif device_type == DeviceType.Shutter:
                     self._devices_map[item[ApiAttribute.ID]] = SwitchBeeShutter(
-                        id=item[ApiAttribute.ID],
-                        name=item[ApiAttribute.NAME],
+                        id=device_id,
+                        name=device_name,
                         zone=zone[ApiAttribute.NAME],
                         hardware=device_hw,
                         type=device_type,
@@ -343,8 +362,8 @@ class CentralUnitAPI:
                 # add timed power switch device
                 elif device_type == DeviceType.TimedPowerSwitch:
                     self._devices_map[item[ApiAttribute.ID]] = SwitchBeeTimerSwitch(
-                        id=item[ApiAttribute.ID],
-                        name=item[ApiAttribute.NAME],
+                        id=device_id,
+                        name=device_name,
                         zone=zone[ApiAttribute.NAME],
                         hardware=device_hw,
                         type=device_type,
@@ -352,8 +371,8 @@ class CentralUnitAPI:
                 # add scenario
                 elif device_type == DeviceType.Scenario:
                     self._devices_map[item[ApiAttribute.ID]] = SwitchBeeScenario(
-                        id=item[ApiAttribute.ID],
-                        name=item[ApiAttribute.NAME],
+                        id=device_id,
+                        name=device_name,
                         zone=zone[ApiAttribute.NAME],
                         hardware=device_hw,
                         type=device_type,
@@ -364,8 +383,8 @@ class CentralUnitAPI:
                     and device_hw != HardwareType.Virtual
                 ):
                     self._devices_map[item[ApiAttribute.ID]] = SwitchBeeGroupSwitch(
-                        id=item[ApiAttribute.ID],
-                        name=item[ApiAttribute.NAME],
+                        id=device_id,
+                        name=device_name,
                         zone=zone[ApiAttribute.NAME],
                         hardware=device_hw,
                         type=device_type,
@@ -373,8 +392,8 @@ class CentralUnitAPI:
 
                 elif device_type == DeviceType.Thermostat:
                     self._devices_map[item[ApiAttribute.ID]] = SwitchBeeThermostat(
-                        id=item[ApiAttribute.ID],
-                        name=item[ApiAttribute.NAME],
+                        id=device_id,
+                        name=device_name,
                         zone=zone[ApiAttribute.NAME],
                         hardware=device_hw,
                         type=device_type,
@@ -385,8 +404,8 @@ class CentralUnitAPI:
                 # add rolling scenario
                 elif device_type == DeviceType.RollingScenario:
                     self._devices_map[item[ApiAttribute.ID]] = SwitchBeeRollingScenario(
-                        id=item[ApiAttribute.ID],
-                        name=item[ApiAttribute.NAME],
+                        id=device_id,
+                        name=device_name,
                         zone=zone[ApiAttribute.NAME],
                         hardware=device_hw,
                         type=device_type,
@@ -395,8 +414,8 @@ class CentralUnitAPI:
                 # add timed switch
                 elif device_type == DeviceType.TimedSwitch:
                     self._devices_map[item[ApiAttribute.ID]] = SwitchBeeTimedSwitch(
-                        id=item[ApiAttribute.ID],
-                        name=item[ApiAttribute.NAME],
+                        id=device_id,
+                        name=device_name,
                         zone=zone[ApiAttribute.NAME],
                         hardware=device_hw,
                         type=device_type,
@@ -404,8 +423,8 @@ class CentralUnitAPI:
                 # add two way
                 elif device_type == DeviceType.TwoWay:
                     self._devices_map[item[ApiAttribute.ID]] = SwitchBeeTwoWay(
-                        id=item[ApiAttribute.ID],
-                        name=item[ApiAttribute.NAME],
+                        id=device_id,
+                        name=device_name,
                         zone=zone[ApiAttribute.NAME],
                         hardware=device_hw,
                         type=device_type,
@@ -414,8 +433,8 @@ class CentralUnitAPI:
                 # add somfy
                 elif device_type == DeviceType.Somfy:
                     self._devices_map[item[ApiAttribute.ID]] = SwitchBeeSomfy(
-                        id=item[ApiAttribute.ID],
-                        name=item[ApiAttribute.NAME],
+                        id=device_id,
+                        name=device_name,
                         zone=zone[ApiAttribute.NAME],
                         hardware=device_hw,
                         type=device_type,

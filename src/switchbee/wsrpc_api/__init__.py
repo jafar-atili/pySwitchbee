@@ -421,17 +421,8 @@ class CentralUnitWsRPC:
                     )
                     continue
                 except KeyError:
-                    logger.warning(
-                        "Unknown device with no type (%s), Skipping",
-                        item[ApiAttribute.NAME],
-                    )
-                    continue
-                try:
-                    device_hw = HardwareType(item[ApiAttribute.HARDWARE])
-                except ValueError:
-                    logger.warning(
-                        "Unknown hardware type %s (%s), Skipping",
-                        item[ApiAttribute.HARDWARE],
+                    logger.error(
+                        "device %s missing type attribute, Skipping",
                         item[ApiAttribute.NAME],
                     )
                     continue
@@ -442,11 +433,45 @@ class CentralUnitWsRPC:
                     )
                     continue
 
+                try:
+                    device_hw = HardwareType(item[ApiAttribute.HARDWARE])
+                except ValueError:
+                    logger.warning(
+                        "Unknown hardware type %s (%s), Skipping",
+                        item[ApiAttribute.HARDWARE],
+                        item[ApiAttribute.NAME],
+                    )
+                    continue
+                except KeyError:
+                    logger.error(
+                        "device %s missing hardware attribute, Skipping",
+                        item[ApiAttribute.NAME],
+                    )
+                    continue
+
+                try:
+                    device_id = int(item[ApiAttribute.ID])
+                except KeyError:
+                    logger.error(
+                        "device %s missing id attribute, Skipping",
+                        item,
+                    )
+                    continue
+
+                try:
+                    device_name = item[ApiAttribute.NAME]
+                except KeyError:
+                    logger.error(
+                        "device %s missing name attribute, Skipping",
+                        item,
+                    )
+                    device_name = "Unknown"
+
                 # add switch type device
                 if device_type == DeviceType.Switch:
                     self._devices_map[item[ApiAttribute.ID]] = SwitchBeeSwitch(
-                        id=item[ApiAttribute.ID],
-                        name=item[ApiAttribute.NAME],
+                        id=device_id,
+                        name=device_name,
                         zone=zone[ApiAttribute.NAME],
                         hardware=device_hw,
                         type=device_type,
@@ -454,8 +479,8 @@ class CentralUnitWsRPC:
                 # add dimmer (light) device
                 elif device_type == DeviceType.Dimmer:
                     self._devices_map[item[ApiAttribute.ID]] = SwitchBeeDimmer(
-                        id=item[ApiAttribute.ID],
-                        name=item[ApiAttribute.NAME],
+                        id=device_id,
+                        name=device_name,
                         zone=zone[ApiAttribute.NAME],
                         hardware=device_hw,
                         type=device_type,
@@ -463,8 +488,8 @@ class CentralUnitWsRPC:
                 # add shutter device
                 elif device_type == DeviceType.Shutter:
                     self._devices_map[item[ApiAttribute.ID]] = SwitchBeeShutter(
-                        id=item[ApiAttribute.ID],
-                        name=item[ApiAttribute.NAME],
+                        id=device_id,
+                        name=device_name,
                         zone=zone[ApiAttribute.NAME],
                         hardware=device_hw,
                         type=device_type,
@@ -472,8 +497,8 @@ class CentralUnitWsRPC:
                 # add timed power switch device
                 elif device_type == DeviceType.TimedPowerSwitch:
                     self._devices_map[item[ApiAttribute.ID]] = SwitchBeeTimerSwitch(
-                        id=item[ApiAttribute.ID],
-                        name=item[ApiAttribute.NAME],
+                        id=device_id,
+                        name=device_name,
                         zone=zone[ApiAttribute.NAME],
                         hardware=device_hw,
                         type=device_type,
@@ -481,8 +506,8 @@ class CentralUnitWsRPC:
                 # add scenario
                 elif device_type == DeviceType.Scenario:
                     self._devices_map[item[ApiAttribute.ID]] = SwitchBeeScenario(
-                        id=item[ApiAttribute.ID],
-                        name=item[ApiAttribute.NAME],
+                        id=device_id,
+                        name=device_name,
                         zone=zone[ApiAttribute.NAME],
                         hardware=device_hw,
                         type=device_type,
@@ -493,8 +518,8 @@ class CentralUnitWsRPC:
                     and device_hw != HardwareType.Virtual
                 ):
                     self._devices_map[item[ApiAttribute.ID]] = SwitchBeeGroupSwitch(
-                        id=item[ApiAttribute.ID],
-                        name=item[ApiAttribute.NAME],
+                        id=device_id,
+                        name=device_name,
                         zone=zone[ApiAttribute.NAME],
                         hardware=device_hw,
                         type=device_type,
@@ -502,8 +527,8 @@ class CentralUnitWsRPC:
 
                 elif device_type == DeviceType.Thermostat:
                     self._devices_map[item[ApiAttribute.ID]] = SwitchBeeThermostat(
-                        id=item[ApiAttribute.ID],
-                        name=item[ApiAttribute.NAME],
+                        id=device_id,
+                        name=device_name,
                         zone=zone[ApiAttribute.NAME],
                         hardware=device_hw,
                         type=device_type,
@@ -514,8 +539,8 @@ class CentralUnitWsRPC:
                 # add rolling scenario
                 elif device_type == DeviceType.RollingScenario:
                     self._devices_map[item[ApiAttribute.ID]] = SwitchBeeRollingScenario(
-                        id=item[ApiAttribute.ID],
-                        name=item[ApiAttribute.NAME],
+                        id=device_id,
+                        name=device_name,
                         zone=zone[ApiAttribute.NAME],
                         hardware=device_hw,
                         type=device_type,
@@ -524,8 +549,8 @@ class CentralUnitWsRPC:
                 # add timed switch
                 elif device_type == DeviceType.TimedSwitch:
                     self._devices_map[item[ApiAttribute.ID]] = SwitchBeeTimedSwitch(
-                        id=item[ApiAttribute.ID],
-                        name=item[ApiAttribute.NAME],
+                        id=device_id,
+                        name=device_name,
                         zone=zone[ApiAttribute.NAME],
                         hardware=device_hw,
                         type=device_type,
@@ -533,8 +558,8 @@ class CentralUnitWsRPC:
                 # add two way
                 elif device_type == DeviceType.TwoWay:
                     self._devices_map[item[ApiAttribute.ID]] = SwitchBeeTwoWay(
-                        id=item[ApiAttribute.ID],
-                        name=item[ApiAttribute.NAME],
+                        id=device_id,
+                        name=device_name,
                         zone=zone[ApiAttribute.NAME],
                         hardware=device_hw,
                         type=device_type,
@@ -543,8 +568,8 @@ class CentralUnitWsRPC:
                 # add somfy
                 elif device_type == DeviceType.Somfy:
                     self._devices_map[item[ApiAttribute.ID]] = SwitchBeeSomfy(
-                        id=item[ApiAttribute.ID],
-                        name=item[ApiAttribute.NAME],
+                        id=device_id,
+                        name=device_name,
                         zone=zone[ApiAttribute.NAME],
                         hardware=device_hw,
                         type=device_type,
@@ -564,6 +589,7 @@ class CentralUnitWsRPC:
                 self._modules_map[unit_id].add(
                     self._devices_map[item[ApiAttribute.ID]].hardware.display
                 )
+
 
     async def fetch_states(
         self,
