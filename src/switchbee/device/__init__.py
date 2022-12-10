@@ -1,12 +1,12 @@
 from __future__ import annotations
-from abc import ABC
 
+from abc import ABC
 from dataclasses import dataclass, field
 from enum import Enum, unique
 from typing import Any, List, final
 
-from ..api.utils import timestamp_now
 from ..const import ApiDeviceHardware, ApiDeviceType, ApiStateCommand
+from ..utils import timestamp_now
 
 
 @unique

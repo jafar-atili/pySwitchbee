@@ -53,7 +53,7 @@ class UdpClientProtocol(DatagramProtocol):
                 CentralUnit(
                     json_data["name"],
                     json_data["CUVersion"],
-                    str(json_data["mac"]).replace("-", ':'),
+                    str(json_data["mac"]).replace("-", ":"),
                     json_data["switches"],
                     addr[0],
                     json_data["ip"],
