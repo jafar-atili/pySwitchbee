@@ -15,7 +15,6 @@ from switchbee.const import ApiAttribute, ApiCommand
 logger = getLogger(__name__)
 
 
-
 class DeviceConnectionError(Exception):
     pass
 
@@ -39,14 +38,12 @@ async def receive_json_or_raise(msg: WSMessage) -> dict[str, Any]:
     if msg.type != WSMsgType.TEXT:
         raise InvalidMessage(f"Received non-Text message: {msg.type}")
 
-
     try:
         data: dict[str, Any] = msg.json()
     except ValueError as err:
         raise InvalidMessage(f"Received invalid JSON: {msg.data}") from err
 
-
-    if status := data.get('status') == 'ERROR':
+    if status := data.get("status") == "ERROR":
         raise SwitchBeeError("Response Error: %s", data)
 
     return data
@@ -98,7 +95,12 @@ class RPCCall:
 
 class CentralUnitWsRPC(CentralUnitAPI):
     def __init__(
-        self ,ip_address: str, user_name: str, password: str, aiohttp_session: ClientSession, on_notification: Callable
+        self,
+        ip_address: str,
+        user_name: str,
+        password: str,
+        aiohttp_session: ClientSession,
+        on_notification: Callable,
     ) -> None:
         super().__init__(ip_address, user_name, password, aiohttp_session)
 
@@ -119,6 +121,9 @@ class CentralUnitWsRPC(CentralUnitAPI):
         self._call_id += 1
         return self._call_id
 
+    def subscribe_updates(self, callback: Callable):
+        self._on_notification = callback
+
     async def connect(self) -> None:
         if self.connected:
             raise RuntimeError("Already connected")
@@ -138,7 +143,7 @@ class CentralUnitWsRPC(CentralUnitAPI):
             raise DeviceConnectionError(err) from err
 
         self._receive_task = create_task(self._rx_msgs())
-        await self.fetch_configuration(None)
+        await self.fetch_configuration()
         await self.fetch_states()
         logger.info("Connected to %s", self._ip_address)
 
@@ -157,13 +162,16 @@ class CentralUnitWsRPC(CentralUnitAPI):
                 frame = await receive_json_or_raise(msg)
                 logger.debug("recv(%s): %s", self._ip_address, frame)
             except InvalidMessage as err:
-                logger.error("Invalid Message from central unit %s: %s", self._ip_address, err)
+                logger.error(
+                    "Invalid Message from central unit %s: %s", self._ip_address, err
+                )
             except ConnectionClosed:
                 break
 
             except SwitchBeeError as err:
-                logger.error("Response error from central unit %s: %s", self._ip_address, err)
-
+                logger.error(
+                    "Response error from central unit %s: %s", self._ip_address, err
+                )
 
             if not self._client.closed:
                 self.handle_frame(frame)

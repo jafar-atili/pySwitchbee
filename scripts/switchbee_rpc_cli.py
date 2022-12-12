@@ -118,7 +118,7 @@ async def main(args):
         print(f"Central Unit: {cu.name}")
         print(f"Central MAC: {cu.mac}")
         print(f"Central Version: {cu.version}")
-        await asyncio.sleep(1000)
+        await asyncio.sleep(10000)
 
         if args.action == "get_devices":
             for device in cu.devices.values():
