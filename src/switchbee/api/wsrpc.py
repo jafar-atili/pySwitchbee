@@ -102,7 +102,7 @@ class CentralUnitWsRPC(CentralUnitAPI):
         user_name: str,
         password: str,
         aiohttp_session: ClientSession,
-        on_notification: Callable,
+        on_notification: Callable | None = None,
     ) -> None:
         super().__init__(ip_address, user_name, password, aiohttp_session)
 
@@ -168,7 +168,6 @@ class CentralUnitWsRPC(CentralUnitAPI):
                     "Invalid Message from central unit %s: %s", self._ip_address, err
                 )
             except ConnectionClosed:
-                logger.error("CLOSEEED")
                 break
 
             except SwitchBeeError as err:
@@ -207,7 +206,8 @@ class CentralUnitWsRPC(CentralUnitAPI):
             if notification_type := frame.get("notificationType"):
                 # this is a notification
                 logger.debug("Notification %s %s", notification_type, frame)
-                self._on_notification(frame)
+                if self._on_notification:
+                    self._on_notification(frame)
             else:
                 logger.warning("Invalid frame: %s", frame)
 
