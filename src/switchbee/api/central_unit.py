@@ -438,11 +438,11 @@ class CentralUnitAPI(ABC):
         device = self._devices_map[device_id]
 
         if isinstance(device, SwitchBeeDimmer):
-            assert isinstance(state, int)
-            device.brightness = state
+            assert isinstance(state, (str, int))
+            device.brightness = state  # type: ignore
         elif isinstance(device, SwitchBeeShutter):
-            assert isinstance(state, int)
-            device.position = state
+            assert isinstance(state, (str, int))
+            device.position = state  # type: ignore
         elif isinstance(
             device,
             (
@@ -467,7 +467,7 @@ class CentralUnitAPI(ABC):
                     state,
                 )
                 return
-            
+
             device.mode = state[ApiAttribute.MODE]
             device.fan = state[ApiAttribute.FAN]
 
