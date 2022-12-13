@@ -261,7 +261,7 @@ class CentralUnitAPI(ABC):
                     continue
 
                 try:
-                    device_id = int(item[ApiAttribute.ID])
+                    device_id = item[ApiAttribute.ID]
                 except KeyError:
                     logger.error(
                         "device %s missing id attribute, Skipping",
@@ -426,43 +426,50 @@ class CentralUnitAPI(ABC):
         for device_state in states[ApiAttribute.DATA]:
             device_id = device_state[ApiAttribute.ID]
 
-            if device_id not in self._devices_map:
-                continue
+            self.update_device_state(device_id, device_state[ApiAttribute.STATE])
 
-            device = self._devices_map[device_id]
+    def update_device_state(self, device_id: int, state: str | int | dict) -> None:
+        """Update device state."""
 
-            if isinstance(device, SwitchBeeDimmer):
-                device.brightness = device_state[ApiAttribute.STATE]
-            elif isinstance(device, SwitchBeeShutter):
-                device.position = device_state[ApiAttribute.STATE]
-            elif isinstance(
-                device,
-                (
-                    SwitchBeeSwitch,
-                    SwitchBeeGroupSwitch,
-                    SwitchBeeTimedSwitch,
-                    SwitchBeeTimerSwitch,
-                ),
-            ):
+        if device_id not in self._devices_map:
+            logger.debug("Device id %d is not tracked", device_id)
+            return
 
-                device.state = device_state[ApiAttribute.STATE]
-            elif isinstance(device, SwitchBeeThermostat):
-                try:
-                    device.state = device_state[ApiAttribute.STATE][ApiAttribute.POWER]
-                except TypeError:
-                    logger.error(
-                        "%s: Received invalid state from CU, keeping the old one: %s",
-                        device.name,
-                        device_state,
-                    )
-                    continue
+        device = self._devices_map[device_id]
 
-                device.mode = device_state[ApiAttribute.STATE][ApiAttribute.MODE]
-                device.fan = device_state[ApiAttribute.STATE][ApiAttribute.FAN]
+        if isinstance(device, SwitchBeeDimmer):
+            assert isinstance(state, int)
+            device.brightness = state
+        elif isinstance(device, SwitchBeeShutter):
+            assert isinstance(state, int)
+            device.position = state
+        elif isinstance(
+            device,
+            (
+                SwitchBeeSwitch,
+                SwitchBeeGroupSwitch,
+                SwitchBeeTimedSwitch,
+                SwitchBeeTimerSwitch,
+            ),
+        ):
 
-                device.target_temperature = device_state[ApiAttribute.STATE][
-                    ApiAttribute.CONFIGURED_TEMPERATURE
-                ]
-                device.temperature = device_state[ApiAttribute.STATE][
-                    ApiAttribute.ROOM_TEMPERATURE
-                ]
+            assert isinstance(state, (int, str))
+            device.state = state
+
+        elif isinstance(device, SwitchBeeThermostat):
+            try:
+                assert isinstance(state, dict)
+                device.state = state[ApiAttribute.POWER]
+            except TypeError:
+                logger.error(
+                    "%s: Received invalid state from CU, keeping the old one: %s",
+                    device.name,
+                    state,
+                )
+                return
+            
+            device.mode = state[ApiAttribute.MODE]
+            device.fan = state[ApiAttribute.FAN]
+
+            device.target_temperature = state[ApiAttribute.CONFIGURED_TEMPERATURE]
+            device.temperature = state[ApiAttribute.ROOM_TEMPERATURE]

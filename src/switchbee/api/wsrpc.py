@@ -30,6 +30,8 @@ class ConnectionClosed(Exception):
 async def receive_json_or_raise(msg: WSMessage) -> dict[str, Any]:
     """Receive json or raise."""
     if msg.type in (WSMsgType.CLOSE, WSMsgType.CLOSED, WSMsgType.CLOSING):
+        print(msg.type)
+        print("AAAA")
         raise ConnectionClosed("Connection was closed.")
 
     if msg.type == WSMsgType.ERROR:
@@ -121,7 +123,7 @@ class CentralUnitWsRPC(CentralUnitAPI):
         self._call_id += 1
         return self._call_id
 
-    def subscribe_updates(self, callback: Callable):
+    def subscribe_updates(self, callback: Callable) -> None:
         self._on_notification = callback
 
     async def connect(self) -> None:
@@ -166,6 +168,7 @@ class CentralUnitWsRPC(CentralUnitAPI):
                     "Invalid Message from central unit %s: %s", self._ip_address, err
                 )
             except ConnectionClosed:
+                logger.error("CLOSEEED")
                 break
 
             except SwitchBeeError as err:
@@ -235,6 +238,9 @@ class CentralUnitWsRPC(CentralUnitAPI):
     async def _send_request(
         self, command: str, params: dict[str, Any] | int | list | None = None
     ) -> dict:
+        if not self.connected:
+            await self.connect()
+
         return await self.call(command, params)
 
     async def _login(self) -> None:
@@ -248,3 +254,11 @@ class CentralUnitWsRPC(CentralUnitAPI):
         )
 
         super()._update_login(resp)
+
+    def update_device_state_from_event(self, push_data: dict) -> None:
+        """Update device state from notification data."""
+
+        if dev_id := push_data.get(ApiAttribute.ID):
+            return self.update_device_state(dev_id, push_data[ApiAttribute.NEW_VALUE])
+
+        logger.warning("Recieved update with no device id: %s", push_data)

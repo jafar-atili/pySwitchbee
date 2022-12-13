@@ -45,6 +45,7 @@ class ApiAttribute:
     FAN = "fan"
     CONFIGURED_TEMPERATURE = "configuredTemperature"
     ROOM_TEMPERATURE = "roomTemperature"
+    NEW_VALUE = "newValue"
 
 
 class ApiStateCommand:
