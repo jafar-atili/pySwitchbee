@@ -438,9 +438,15 @@ class CentralUnitAPI(ABC):
         device = self._devices_map[device_id]
 
         if isinstance(device, SwitchBeeDimmer):
+            # temp workaround
+            if isinstance(state, float):
+                state = int(state)
             assert isinstance(state, (str, int))
             device.brightness = state  # type: ignore
         elif isinstance(device, SwitchBeeShutter):
+            # temp workaround
+            if isinstance(state, float):
+                state = int(state)
             assert isinstance(state, (str, int))
             device.position = state  # type: ignore
         elif isinstance(

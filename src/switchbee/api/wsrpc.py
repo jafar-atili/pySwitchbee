@@ -30,8 +30,6 @@ class ConnectionClosed(Exception):
 async def receive_json_or_raise(msg: WSMessage) -> dict[str, Any]:
     """Receive json or raise."""
     if msg.type in (WSMsgType.CLOSE, WSMsgType.CLOSED, WSMsgType.CLOSING):
-        print(msg.type)
-        print("AAAA")
         raise ConnectionClosed("Connection was closed.")
 
     if msg.type == WSMsgType.ERROR:
@@ -128,7 +126,7 @@ class CentralUnitWsRPC(CentralUnitAPI):
 
     async def connect(self) -> None:
         if self.connected:
-            raise RuntimeError("Already connected")
+            raise RuntimeError("Already connected")        
 
         logger.debug("Trying to connect to device at %s", self._ip_address)
         try:
@@ -145,6 +143,7 @@ class CentralUnitWsRPC(CentralUnitAPI):
             raise DeviceConnectionError(err) from err
 
         self._receive_task = create_task(self._rx_msgs())
+        await self._login()
         await self.fetch_configuration()
         await self.fetch_states()
         logger.info("Connected to %s", self._ip_address)
@@ -261,4 +260,4 @@ class CentralUnitWsRPC(CentralUnitAPI):
         if dev_id := push_data.get(ApiAttribute.ID):
             return self.update_device_state(dev_id, push_data[ApiAttribute.NEW_VALUE])
 
-        logger.warning("Recieved update with no device id: %s", push_data)
+        logger.warning("Received update with no device id: %s", push_data)
