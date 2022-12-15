@@ -102,8 +102,13 @@ class SwitchBeeBaseSwitch(ABC):
         return self._state
 
     @state.setter
-    def state(self, value: str) -> None:
-        self._state = value
+    def state(self, value: str | int) -> None:
+        if value == 0:
+            self._state = ApiStateCommand.OFF
+        elif value == 100:
+            self._state = ApiStateCommand.ON
+        else:
+            self._state = value
 
 
 @dataclass
