@@ -95,10 +95,10 @@ class SwitchBeeBaseDevice(ABC):
 
 @dataclass
 class SwitchBeeBaseSwitch(ABC):
-    _state: str | None = field(init=False, default=None)
+    _state: str | int | None = field(init=False, default=None)
 
     @property
-    def state(self) -> str | None:
+    def state(self) -> str | int | None:
         return self._state
 
     @state.setter

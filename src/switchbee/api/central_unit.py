@@ -428,25 +428,23 @@ class CentralUnitAPI(ABC):
 
             self.update_device_state(device_id, device_state[ApiAttribute.STATE])
 
-    def update_device_state(self, device_id: int, state: str | int | dict) -> None:
+    def update_device_state(self, device_id: int, new_state: str | int | dict) -> bool:
         """Update device state."""
 
         if device_id not in self._devices_map:
             logger.debug("Device id %d is not tracked", device_id)
-            return
+            return False
 
         device = self._devices_map[device_id]
 
-        # temp workaround
-        if isinstance(state, float):
-            state = int(state)
-
         if isinstance(device, SwitchBeeDimmer):
-            assert isinstance(state, (str, int))
-            device.brightness = state  # type: ignore
+            assert isinstance(new_state, (str, int))
+            device.brightness = new_state  # type: ignore
+
         elif isinstance(device, SwitchBeeShutter):
-            assert isinstance(state, (str, int))
-            device.position = state  # type: ignore
+            assert isinstance(new_state, (str, int))
+            device.position = new_state  # type: ignore
+
         elif isinstance(
             device,
             (
@@ -457,23 +455,28 @@ class CentralUnitAPI(ABC):
             ),
         ):
 
-            assert isinstance(state, (int, str))
-            device.state = state
+            assert isinstance(new_state, (int, str))
+            device.state = new_state
 
         elif isinstance(device, SwitchBeeThermostat):
             try:
-                assert isinstance(state, dict)
-                device.state = state[ApiAttribute.POWER]
+                assert isinstance(new_state, dict)
+                device.state = new_state[ApiAttribute.POWER]
             except TypeError:
                 logger.error(
                     "%s: Received invalid state from CU, keeping the old one: %s",
                     device.name,
-                    state,
+                    new_state,
                 )
-                return
+                return False
 
-            device.mode = state[ApiAttribute.MODE]
-            device.fan = state[ApiAttribute.FAN]
+            device.mode = new_state[ApiAttribute.MODE]
+            device.fan = new_state[ApiAttribute.FAN]
 
-            device.target_temperature = state[ApiAttribute.CONFIGURED_TEMPERATURE]
-            device.temperature = state[ApiAttribute.ROOM_TEMPERATURE]
+            device.target_temperature = new_state[ApiAttribute.CONFIGURED_TEMPERATURE]
+            device.temperature = new_state[ApiAttribute.ROOM_TEMPERATURE]
+
+        else:
+            return False
+
+        return True

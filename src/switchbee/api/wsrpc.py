@@ -126,7 +126,7 @@ class CentralUnitWsRPC(CentralUnitAPI):
 
     async def connect(self) -> None:
         if self.connected:
-            raise RuntimeError("Already connected")        
+            raise RuntimeError("Already connected")
 
         logger.debug("Trying to connect to device at %s", self._ip_address)
         try:
@@ -205,6 +205,8 @@ class CentralUnitWsRPC(CentralUnitAPI):
             if notification_type := frame.get("notificationType"):
                 # this is a notification
                 logger.debug("Notification %s %s", notification_type, frame)
+                # update the devices states based on the event
+                self.update_device_state_from_event(frame)
                 if self._on_notification:
                     self._on_notification(frame)
             else:
@@ -258,6 +260,6 @@ class CentralUnitWsRPC(CentralUnitAPI):
         """Update device state from notification data."""
 
         if dev_id := push_data.get(ApiAttribute.ID):
-            return self.update_device_state(dev_id, push_data[ApiAttribute.NEW_VALUE])
+            self.update_device_state(dev_id, push_data[ApiAttribute.NEW_VALUE])
 
         logger.warning("Received update with no device id: %s", push_data)
