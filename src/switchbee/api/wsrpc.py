@@ -13,6 +13,8 @@ from switchbee.const import ApiAttribute, ApiCommand
 
 
 CU_WSRPC_VERSION = "1.4.6"
+CU_WSRPC_VERSION_A = "A.4.6"
+
 
 logger = getLogger(__name__)
 
