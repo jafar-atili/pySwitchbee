@@ -12,6 +12,8 @@ from aiohttp.client_exceptions import ClientError, WSServerHandshakeError
 from switchbee.const import ApiAttribute, ApiCommand
 
 
+CU_WSRPC_VERSION = "1.4.6"
+
 logger = getLogger(__name__)
 
 
@@ -259,7 +261,10 @@ class CentralUnitWsRPC(CentralUnitAPI):
     def update_device_state_from_event(self, push_data: dict) -> None:
         """Update device state from notification data."""
 
-        if dev_id := push_data.get(ApiAttribute.ID):
-            self.update_device_state(dev_id, push_data[ApiAttribute.NEW_VALUE])
+        if ApiAttribute.ID not in push_data:
+            logger.error("Received update with no device id: %s", push_data)
+            return
 
-        logger.warning("Received update with no device id: %s", push_data)
+        self.update_device_state(
+            push_data[ApiAttribute.ID], push_data[ApiAttribute.NEW_VALUE]
+        )
