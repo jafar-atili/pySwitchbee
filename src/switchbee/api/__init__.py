@@ -8,18 +8,18 @@ from .wsrpc import (
     DeviceConnectionError,
     InvalidMessage,
     ConnectionClosed,
-    CU_WSRPC_VERSION,
-    CU_WSRPC_VERSION_A,
 )
+
 from .central_unit import (
     SwitchBeeError,
     SwitchBeeTokenError,
     SwitchBeeDeviceOfflineError,
+    CUVersion,
 )
 
 
 def is_wsrpc_api(api: CentralUnitPolling | CentralUnitWsRPC) -> bool:
-    assert isinstance(api.version, str)
-    if CU_WSRPC_VERSION in api.version or CU_WSRPC_VERSION_A in api.version:
+    assert isinstance(api.version, CUVersion)
+    if api.version.minor >= 4 and api.version.revision >= 6:
         return True
     return False

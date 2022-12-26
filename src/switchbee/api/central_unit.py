@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import timedelta
 from logging import getLogger
 from typing import Any, List
@@ -54,6 +55,20 @@ STATE_MAP = [
 ]
 
 
+class CUVersion:
+    def __init__(self, version: str) -> None:
+        self.major : int | str = 0
+        self.minor : int = 0
+        self.revision: int = 0
+        self.build: int = 0
+
+        if match := re.match(version, r'(\d+|\S).(\d+).(\d+)\((\d+)\)$'):
+            self.major = match.group(1)
+            self.minor = match.group(2)
+            self.revision = match.group(3)
+            self.build = match.group(4)
+
+
 class CentralUnitAPI(ABC):
     _login_count: int = -1  # we don't count the first login
     _token: str | None = None
@@ -68,7 +83,7 @@ class CentralUnitAPI(ABC):
         self._aiohttp_session: ClientSession = aiohttp_session
 
         self._mac: str | None = None
-        self._version: str | None = None
+        self._version: CUVersion | None = None
         self._name: str | None = None
         self._last_conf_change: int = 0
         self._devices_map: dict[
@@ -93,7 +108,7 @@ class CentralUnitAPI(ABC):
         return self._name
 
     @property
-    def version(self) -> str | None:
+    def version(self) -> CUVersion | None:
         return self._version
 
     @property
@@ -213,7 +228,7 @@ class CentralUnitAPI(ABC):
         self._devices_map.clear()
         self._modules_map.clear()
         self._name = data[ApiAttribute.DATA][ApiAttribute.NAME]
-        self._version = data[ApiAttribute.DATA][ApiAttribute.VERSION]
+        self._version = CUVersion(data[ApiAttribute.DATA][ApiAttribute.VERSION])
         self._mac = data[ApiAttribute.DATA][ApiAttribute.MAC]
 
         if include is None:
