@@ -57,16 +57,19 @@ STATE_MAP = [
 
 class CUVersion:
     def __init__(self, version: str) -> None:
-        self.major : int | str = 0
-        self.minor : int = 0
+        self.major: int | str = 0
+        self.minor: int = 0
         self.revision: int = 0
         self.build: int = 0
 
-        if match := re.match(version, r'(\d+|\S).(\d+).(\d+)\((\d+)\)$'):
+        self._initialize(version)
+
+    def _initialize(self, version)
+        if match := re.match(r"(\d+|\S)\.(\d+)\.(\d+)\((\d+)\)$", version):
             self.major = match.group(1)
-            self.minor = match.group(2)
-            self.revision = match.group(3)
-            self.build = match.group(4)
+            self.minor = int(match.group(2))
+            self.revision = int(match.group(3))
+            self.build = int(match.group(4))
 
 
 class CentralUnitAPI(ABC):
