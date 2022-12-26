@@ -64,7 +64,7 @@ class CUVersion:
 
         self._initialize(version)
 
-    def _initialize(self, version)
+    def _initialize(self, version) -> None:
         if match := re.match(r"(\d+|\S)\.(\d+)\.(\d+)\((\d+)\)$", version):
             self.major = match.group(1)
             self.minor = int(match.group(2))
