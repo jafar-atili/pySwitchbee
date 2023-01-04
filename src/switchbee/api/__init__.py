@@ -21,6 +21,6 @@ from .central_unit import (
 
 def is_wsrpc_api(api: CentralUnitPolling | CentralUnitWsRPC) -> bool:
     assert isinstance(api.version, CUVersion)
-    if parse_version(str(CUVersion)) >= parse_version("1.4.6.1"):
+    if parse_version(str(api.version)) >= parse_version("1.4.6.1"):
         return True
     return False
