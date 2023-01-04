@@ -70,6 +70,9 @@ class CUVersion:
             self.minor = int(match.group(2))
             self.revision = int(match.group(3))
             self.build = int(match.group(4))
+    
+    def __repr__(self) -> str:
+        return f"{self.major}.{self.minor}.{self.revision}.{self.build}"
 
 
 class CentralUnitAPI(ABC):
