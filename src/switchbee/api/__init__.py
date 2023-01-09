@@ -1,5 +1,5 @@
 from __future__ import annotations
-from packaging.version import parse as parse_version
+from awesomeversion import AwesomeVersion
 
 __all__ = ["polling", "wsrpc", "central_unit"]
 
@@ -21,6 +21,6 @@ from .central_unit import (
 
 def is_wsrpc_api(api: CentralUnitPolling | CentralUnitWsRPC) -> bool:
     assert isinstance(api.version, CUVersion)
-    if parse_version(str(api.version)) >= parse_version("1.4.6.1"):
+    if AwesomeVersion(str(api.version)) >= AwesomeVersion("1.4.6.1"):
         return True
     return False
