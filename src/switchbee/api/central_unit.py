@@ -70,7 +70,7 @@ class CUVersion:
             self.minor = int(match.group(2))
             self.revision = int(match.group(3))
             self.build = int(match.group(4))
-    
+
     def __repr__(self) -> str:
         return f"{self.major}.{self.minor}.{self.revision}.{self.build}"
 
@@ -89,6 +89,7 @@ class CentralUnitAPI(ABC):
         self._aiohttp_session: ClientSession = aiohttp_session
 
         self._mac: str | None = None
+        self._unique_id: str | None = None
         self._version: CUVersion | None = None
         self._name: str | None = None
         self._last_conf_change: int = 0
@@ -120,6 +121,10 @@ class CentralUnitAPI(ABC):
     @property
     def mac(self) -> str | None:
         return self._mac
+
+    @property
+    def unique_id(self) -> str | None:
+        return self._unique_id
 
     @property
     def devices(
@@ -236,7 +241,11 @@ class CentralUnitAPI(ABC):
         self._name = data[ApiAttribute.DATA][ApiAttribute.NAME]
         self._version = CUVersion(data[ApiAttribute.DATA][ApiAttribute.VERSION])
         self._mac = data[ApiAttribute.DATA][ApiAttribute.MAC]
-
+        self._unique_id = (
+            self._mac
+            if ApiAttribute.CU_CODE not in data[ApiAttribute.DATA]
+            else data[ApiAttribute.DATA][ApiAttribute.CU_CODE]
+        )
         if include is None:
             return
 
