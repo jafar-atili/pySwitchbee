@@ -46,6 +46,7 @@ class ApiAttribute:
     CONFIGURED_TEMPERATURE = "configuredTemperature"
     ROOM_TEMPERATURE = "roomTemperature"
     NEW_VALUE = "newValue"
+    CU_CODE = "cuCode"
 
 
 class ApiStateCommand:
