@@ -242,7 +242,7 @@ class CentralUnitAPI(ABC):
         self._version = CUVersion(data[ApiAttribute.DATA][ApiAttribute.VERSION])
         self._mac = data[ApiAttribute.DATA][ApiAttribute.MAC]
         self._unique_id = (
-            self._mac
+            None
             if ApiAttribute.CU_CODE not in data[ApiAttribute.DATA]
             else data[ApiAttribute.DATA][ApiAttribute.CU_CODE]
         )
