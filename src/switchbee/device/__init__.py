@@ -123,7 +123,7 @@ class SwitchBeeBaseShutter(ABC):
     def position(self, value: str | int) -> None:
         if isinstance(value, int):
             self._position = int(value)
-        else
+        else:
             if value == ApiStateCommand.ON:
                 self._position = 100
             else:
