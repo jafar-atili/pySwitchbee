@@ -121,18 +121,17 @@ class SwitchBeeBaseShutter(ABC):
 
     @position.setter
     def position(self, value: str | int) -> None:
-
-        if value == ApiStateCommand.OFF:
-            self._position = 0
-        elif value == ApiStateCommand.ON:
-            self._position = 100
-        else:
+        if isinstance(value, int):
             self._position = int(value)
+        else
+            if value == ApiStateCommand.ON:
+                self._position = 100
+            else:
+                self._position = 0
 
 
 @dataclass
 class SwitchBeeBaseDimmer(ABC):
-
     _brightness: int = field(init=False)
 
     @property
@@ -141,12 +140,13 @@ class SwitchBeeBaseDimmer(ABC):
 
     @brightness.setter
     def brightness(self, value: str | int) -> None:
-        if value == ApiStateCommand.OFF:
-            self._brightness = 0
-        elif value == ApiStateCommand.ON:
-            self._brightness = 100
-        else:
+        if isinstance(value, int):
             self._brightness = int(value)
+        else:
+            if value == ApiStateCommand.ON:
+                self._brightness = 100
+            else:  # OFF/OFFLINE
+                self._brightness = 0
 
 
 @dataclass
@@ -160,7 +160,6 @@ class SwitchBeeBaseTimer(ABC):
 
     @state.setter
     def state(self, value: str | int) -> None:
-
         if value:
             if value == ApiStateCommand.OFF:
                 self._minutes_left = 0
@@ -176,7 +175,6 @@ class SwitchBeeBaseTimer(ABC):
 
 @dataclass
 class SwitchBeeBaseThermostat(ABC):
-
     modes: List[str]
     unit: str
     mode: str = field(init=False)
