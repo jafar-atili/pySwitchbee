@@ -192,7 +192,6 @@ class CentralUnitAPI(ABC):
         raise NotImplementedError
 
     def _update_login(self, resp: dict[str, Any]) -> None:
-
         self._login_count += 1
         self._token = resp[ApiAttribute.DATA][ApiAttribute.TOKEN]
         # instead of dealing with time synchronization issue, we
@@ -207,6 +206,8 @@ class CentralUnitAPI(ABC):
     async def get_multiple_states(self, ids: list) -> dict:
         """returns JSON {'status': 'OK', 'data': [{'id': 212, 'state': 'OFF'}, {'id': 343, 'state': 'OFF'}]}"""
         await self.login_if_needed()
+        if not len(ids):
+            return {}
         return await self._send_request(ApiCommand.GET_MULTI_STATES, ids)
 
     async def get_state(self, id: int) -> dict:
@@ -251,7 +252,6 @@ class CentralUnitAPI(ABC):
 
         for zone in data[ApiAttribute.DATA][ApiAttribute.ZONES]:
             for item in zone[ApiAttribute.ITEMS]:
-
                 try:
                     device_type = DeviceType(item[ApiAttribute.TYPE])
                 except ValueError:
@@ -366,7 +366,7 @@ class CentralUnitAPI(ABC):
                         type=device_type,
                     )
 
-                elif device_type == DeviceType.Thermostat:
+                elif device_type in [DeviceType.Thermostat, DeviceType.VRFAC]:
                     self._devices_map[item[ApiAttribute.ID]] = SwitchBeeThermostat(
                         id=device_id,
                         name=device_name,
@@ -374,7 +374,7 @@ class CentralUnitAPI(ABC):
                         hardware=device_hw,
                         type=device_type,
                         modes=item[ApiAttribute.MODES],
-                        unit=item[ApiAttribute.TEMPERATURE_UNITS],
+                        temperature_unit=item[ApiAttribute.TEMPERATURE_UNITS],
                     )
 
                 # add rolling scenario
@@ -434,7 +434,6 @@ class CentralUnitAPI(ABC):
     async def fetch_states(
         self,
     ) -> None:
-
         states = await self.get_multiple_states(
             [
                 dev
@@ -449,6 +448,7 @@ class CentralUnitAPI(ABC):
                     DeviceType.TimedPowerSwitch,
                     DeviceType.Thermostat,
                     DeviceType.TimedSwitch,
+                    DeviceType.VRFAC,
                 ]
             ]
         )
@@ -484,7 +484,6 @@ class CentralUnitAPI(ABC):
                 SwitchBeeTimerSwitch,
             ),
         ):
-
             assert isinstance(new_state, (int, str))
             device.state = new_state
 

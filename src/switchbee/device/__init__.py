@@ -27,6 +27,7 @@ class DeviceType(Enum):
     Somfy = ApiDeviceType.SOMFY, "Somfy"
     IrDevice = ApiDeviceType.IR_DEVICE, "Infra Red Device"
     RollingScenario = ApiDeviceType.ROLLING_SCENARIO, "Rolling Scenario"
+    VRFAC = ApiDeviceType.VRF_AC, "VRF Unit"
 
     def __new__(cls, *args: Any, **kwds: Any):  # type: ignore
         obj = object.__new__(cls)
@@ -176,7 +177,7 @@ class SwitchBeeBaseTimer(ABC):
 @dataclass
 class SwitchBeeBaseThermostat(ABC):
     modes: List[str]
-    unit: str
+    temperature_unit: str
     mode: str = field(init=False)
     fan: str = field(init=False)
     target_temperature: int = field(init=False)

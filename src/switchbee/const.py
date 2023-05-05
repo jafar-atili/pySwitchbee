@@ -52,6 +52,7 @@ class ApiAttribute:
 class ApiStateCommand:
     ON = "ON"
     OFF = "OFF"
+    OFFLINE = "OFFLINE"
 
 
 # SwitchBee device hardware
@@ -87,6 +88,7 @@ class ApiDeviceType:
     LOUVERED_SHUTTER = "LOUVERED_SHUTTER"
     SOMFY = "SOMFY"
     ROLLING_SCENARIO = "ROLLING_SCENARIO"
+    VRF_AC = "VRF_AC"
 
 
 class ThermostatMode:
