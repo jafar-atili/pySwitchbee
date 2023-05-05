@@ -104,12 +104,12 @@ class SwitchBeeBaseSwitch(ABC):
 
     @state.setter
     def state(self, value: str | int) -> None:
-        if value == 0:
+        if value in [ApiStateCommand.OFF, 0]:
             self._state = ApiStateCommand.OFF
-        elif value == 100:
+        elif value in [ApiStateCommand.ON, 100]:
             self._state = ApiStateCommand.ON
-        else:
-            self._state = value
+        else: # OFFLINE
+            self._state = -1
 
 
 @dataclass
@@ -127,8 +127,10 @@ class SwitchBeeBaseShutter(ABC):
         else:
             if value == ApiStateCommand.ON:
                 self._position = 100
-            else:
+            elif value == ApiStateCommand.OFF:
                 self._position = 0
+            else:  # OFFLINE
+                self._position = -1
 
 
 @dataclass
@@ -146,8 +148,10 @@ class SwitchBeeBaseDimmer(ABC):
         else:
             if value == ApiStateCommand.ON:
                 self._brightness = 100
-            else:  # OFF/OFFLINE
+            elif value == ApiStateCommand.OFF:
                 self._brightness = 0
+            else:  # OFFLINE
+                self._brightness = -1
 
 
 @dataclass
