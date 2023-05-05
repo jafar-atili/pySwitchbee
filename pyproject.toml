@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyswitchbee"
-version = "1.7.24"
+version = "1.7.25"
 description = "SwitchBee Python Integration."
 readme = "README.md"
 authors = [{ name = "Jafar Atili", email = "at.jafar@outlook.com" }]

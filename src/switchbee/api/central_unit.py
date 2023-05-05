@@ -453,6 +453,11 @@ class CentralUnitAPI(ABC):
             ]
         )
 
+        if not states:
+            logger.debug('get_multiple_states returned empty dict')
+            return
+
+
         for device_state in states[ApiAttribute.DATA]:
             device_id = device_state[ApiAttribute.ID]
 
