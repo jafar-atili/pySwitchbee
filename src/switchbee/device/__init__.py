@@ -108,7 +108,7 @@ class SwitchBeeBaseSwitch(ABC):
             self._state = ApiStateCommand.OFF
         elif value in [ApiStateCommand.ON, 100]:
             self._state = ApiStateCommand.ON
-        else: # OFFLINE
+        else:  # OFFLINE
             self._state = -1
 
 
@@ -277,7 +277,7 @@ class SwitchBeeThermostat(
 ):
     def __post_init__(self) -> None:
         """Post initialization validate device type category as Thermostat."""
-        if self.type != DeviceType.Thermostat:
+        if self.type not in [DeviceType.Thermostat, DeviceType.VRFAC]:
             raise ValueError("only Thermostat are allowed")
         super().__post_init__()
 
