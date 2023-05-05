@@ -493,6 +493,7 @@ class CentralUnitAPI(ABC):
             device.state = new_state
 
         elif isinstance(device, SwitchBeeThermostat):
+            logger.error(f'Thermostat: {new_state}')
             try:
                 assert isinstance(new_state, dict)
                 device.state = new_state[ApiAttribute.POWER]
