@@ -64,7 +64,7 @@ class CUVersion:
 
         self._initialize(version)
 
-    def _initialize(self, version) -> None:
+    def _initialize(self, version: str) -> None:
         if match := re.match(r"(\d+|\S)\.(\d+)\.(\d+)\((\d+)\)$", version):
             self.major = match.group(1)
             self.minor = int(match.group(2))
@@ -460,7 +460,6 @@ class CentralUnitAPI(ABC):
 
         for device_state in states[ApiAttribute.DATA]:
             device_id = device_state[ApiAttribute.ID]
-
             self.update_device_state(device_id, device_state[ApiAttribute.STATE])
 
     def update_device_state(self, device_id: int, new_state: str | int | dict) -> bool:
@@ -493,12 +492,20 @@ class CentralUnitAPI(ABC):
             device.state = new_state
 
         elif isinstance(device, SwitchBeeThermostat):
-            logger.error(f'Thermostat: {new_state}')
+            
+            if not isinstance(new_state, dict):
+                logger.warning(
+                    "%s: Received invalid state from CU, keeping the old one: %s",
+                    device.name,
+                    new_state,
+                )
+
+                return False
+
             try:
-                assert isinstance(new_state, dict)
                 device.state = new_state[ApiAttribute.POWER]
             except TypeError:
-                logger.error(
+                logger.warning(
                     "%s: Received invalid state from CU, keeping the old one: %s",
                     device.name,
                     new_state,
