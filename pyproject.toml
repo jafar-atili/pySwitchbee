@@ -15,7 +15,8 @@ classifiers = [
   "Operating System :: OS Independent",
   "Topic :: Home Automation",
   "Topic :: Software Development :: Libraries :: Python Modules",
-  "Typing :: Typed"
+  "Typing :: Typed",
+  "License :: OSI Approved :: Apache Software License",
 ]
 dependencies = [ "aiohttp", "awesomeversion"]
 requires-python = ">=3.9"
