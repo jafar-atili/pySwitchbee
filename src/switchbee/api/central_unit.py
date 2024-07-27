@@ -227,6 +227,11 @@ class CentralUnitAPI(ABC):
         await self.login_if_needed()
         return await self._send_request(ApiCommand.STATS)
 
+    async def get_users(self) -> dict:
+        """returns users."""
+        await self.login_if_needed()
+        return await self._send_request(ApiCommand.GET_USERS)
+    
     async def fetch_configuration(
         self,
         include: list[DeviceType] | None = [],
@@ -438,7 +443,8 @@ class CentralUnitAPI(ABC):
             [
                 dev
                 for dev in self._devices_map.keys()
-                if self._devices_map[dev].hardware != HardwareType.Virtual
+                if (self._devices_map[dev].hardware != HardwareType.Virtual
+                    or self._devices_map[dev].type == DeviceType.VRFAC)
                 and self._devices_map[dev].type
                 in [
                     DeviceType.Switch,
