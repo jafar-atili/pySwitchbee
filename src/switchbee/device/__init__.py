@@ -171,7 +171,7 @@ class SwitchBeeBaseTimer(ABC):
                 self._state = value
             elif value == ApiStateCommand.OFFLINE:
                 self._minutes_left = -1
-                self._state = value
+                self._state = -1
             else:
                 self._minutes_left = int(value)
                 self._state = ApiStateCommand.ON
