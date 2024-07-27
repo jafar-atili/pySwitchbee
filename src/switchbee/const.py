@@ -7,6 +7,7 @@ class ApiCommand:
     STATS = "STATS"
     OPERATE = "OPERATE"
     STATE = "STATE"
+    GET_USERS = "GET_USERS"
 
 
 class ApiStatus:

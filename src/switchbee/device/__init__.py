@@ -114,7 +114,7 @@ class SwitchBeeBaseSwitch(ABC):
 
 @dataclass
 class SwitchBeeBaseShutter(ABC):
-    _position: int | None = field(init=False, repr=False, default=None)
+    _position: int | None = field(init=False, default=None)
 
     @property
     def position(self) -> int | None:
@@ -135,7 +135,7 @@ class SwitchBeeBaseShutter(ABC):
 
 @dataclass
 class SwitchBeeBaseDimmer(ABC):
-    _brightness: int = field(init=False)
+    _brightness: int = field(init=False, repr=False)
 
     @property
     def brightness(self) -> int:
@@ -156,8 +156,8 @@ class SwitchBeeBaseDimmer(ABC):
 
 @dataclass
 class SwitchBeeBaseTimer(ABC):
-    _minutes_left: int = field(init=False)
-    _state: str | int = field(init=False)
+    _minutes_left: int = field(init=False, repr=False)
+    _state: str | int = field(init=False, repr=False)
 
     @property
     def state(self) -> str | int:
@@ -168,6 +168,9 @@ class SwitchBeeBaseTimer(ABC):
         if value:
             if value == ApiStateCommand.OFF:
                 self._minutes_left = 0
+                self._state = value
+            elif value == ApiStateCommand.OFFLINE:
+                self._minutes_left = -1
                 self._state = value
             else:
                 self._minutes_left = int(value)
@@ -182,10 +185,10 @@ class SwitchBeeBaseTimer(ABC):
 class SwitchBeeBaseThermostat(ABC):
     modes: List[str]
     temperature_unit: str
-    mode: str = field(init=False)
-    fan: str = field(init=False)
-    target_temperature: int = field(init=False)
-    temperature: int = field(init=False)
+    mode: str = field(init=False, repr=False)
+    fan: str = field(init=False, repr=False)
+    target_temperature: int = field(init=False, repr=False)
+    temperature: int = field(init=False, repr=False)
     max_temperature: int = 31
     min_temperature: int = 16
 
